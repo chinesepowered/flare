@@ -341,7 +341,7 @@ class ChatRouter:
                 # Check current allowance
                 allowance = token_contract.functions.allowance(
                     self.blockchain.address, 
-                    blazedex.router.address
+                    blazedex.router_contract.address
                 ).call()
                 
                 if allowance < amount_in_token_units:

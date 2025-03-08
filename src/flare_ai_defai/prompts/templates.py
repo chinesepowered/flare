@@ -116,7 +116,7 @@ Extract EXACTLY three pieces of information from the input for a token swap oper
 1. SOURCE TOKEN (from_token)
    Valid formats:
    • Native token: "FLR" or "flr"
-   • Listed pairs only: "USDC", "WFLR", "USDT", "sFLR", "WETH"
+   • Listed pairs only: "USDC", "WFLR", "USDT", "sFLR", "WETH", "C2FLR", "WC2FLR", "testALGO", "testBCH", "testDGB", "testFIL", "testXLM"
    • Case-insensitive match
    • Strip spaces and normalize to uppercase
    • FAIL if token not recognized
