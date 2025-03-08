@@ -225,6 +225,14 @@ class SparkDEXProvider:
         from_token = from_token.upper()
         to_token = to_token.upper()
         
+        # Validate tokens
+        if from_token not in TOKEN_ADDRESSES:
+            raise ValueError(f"Unsupported source token: {from_token}")
+        if to_token not in TOKEN_ADDRESSES:
+            raise ValueError(f"Unsupported destination token: {to_token}")
+        if from_token == to_token:
+            raise ValueError("Cannot swap a token for itself")
+        
         # Get token addresses
         from_address = self.get_token_address(from_token)
         to_address = self.get_token_address(to_token)
@@ -272,9 +280,8 @@ class SparkDEXProvider:
             return output_amount, price_impact
             
         except Exception as e:
-            self.logger.error("swap_quote_failed", error=str(e))
-            msg = f"Failed to get swap quote: {str(e)}"
-            raise ValueError(msg) from e
+            self.logger.error("swap_quote_failed", error=str(e), from_token=from_token, to_token=to_token, amount=amount)
+            raise ValueError(f"Failed to get swap quote: {str(e)}. This may be due to insufficient liquidity for this pair.")
     
     def create_swap_tx(
         self, 

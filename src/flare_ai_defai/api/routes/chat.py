@@ -204,16 +204,16 @@ class ChatRouter:
             SemanticRouterResponse.GENERATE_ACCOUNT: self.handle_generate_account,
             SemanticRouterResponse.SEND_TOKEN: self.handle_send_token,
             SemanticRouterResponse.TOKEN_SWAP: self.handle_token_swap,
+            SemanticRouterResponse.PRICE_QUOTE: self.handle_price_quote,
             SemanticRouterResponse.REQUEST_ATTESTATION: self.handle_attestation,
             SemanticRouterResponse.CONVERSATION: self.handle_conversation,
         }
-        
+
         handler = handlers.get(route)
-        if handler:
-            return await handler(message)
-        else:
-            # Default to conversation if no matching handler
-            return await self.handle_conversation(message)
+        if not handler:
+            return {"response": "Unsupported route"}
+
+        return await handler(message)
 
     async def handle_generate_account(self, _: str) -> dict[str, str]:
         """
@@ -407,3 +407,61 @@ class ChatRouter:
         """
         response = self.ai.send_message(message)
         return {"response": response.text}
+
+    async def handle_price_quote(self, message: str) -> dict[str, str]:
+        """
+        Handle price quote requests for token swaps.
+        
+        Args:
+            message: Message containing token swap details
+            
+        Returns:
+            dict[str, str]: Response containing price quote information
+        """
+        if not self.blockchain.address:
+            return await self.handle_generate_account(message)
+        
+        # Get the token swap parameters from the message
+        prompt, mime_type, schema = self.prompts.get_formatted_prompt(
+            "price_quote", user_input=message
+        )
+        
+        try:
+            swap_response = self.ai.generate(
+                prompt=prompt, response_mime_type=mime_type, response_schema=schema
+            )
+            
+            swap_json = json.loads(swap_response.text)
+            
+            # Validate the swap parameters
+            if not all(key in swap_json for key in ["from_token", "to_token", "amount"]):
+                prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_swap")
+                follow_up_response = self.ai.generate(prompt=prompt)
+                return {"response": follow_up_response.text}
+            
+            from_token = swap_json["from_token"]
+            to_token = swap_json["to_token"]
+            amount = swap_json["amount"]
+            
+            # Initialize SparkDEX provider
+            sparkdex = SparkDEXProvider(self.blockchain.w3)
+            
+            # Get a quote for the swap
+            expected_output, price_impact = sparkdex.get_swap_quote(
+                from_token, to_token, amount
+            )
+            
+            # Format the price quote response
+            price_quote = (
+                f"Price Quote: {amount} {from_token} ≈ {expected_output:.6f} {to_token}\n"
+                f"Rate: 1 {from_token} ≈ {expected_output/amount:.6f} {to_token}\n"
+                f"Price Impact: {price_impact:.2f}%\n\n"
+                f"To execute this swap, say: \"Swap {amount} {from_token} to {to_token}\""
+            )
+            
+            return {"response": price_quote}
+            
+        except Exception as e:
+            self.logger.error("price_quote_failed", error=str(e))
+            error_response = f"Sorry, I couldn't get a price quote: {str(e)}"
+            return {"response": error_response}

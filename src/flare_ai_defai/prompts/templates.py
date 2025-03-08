@@ -22,13 +22,20 @@ Classify the user's message into one of the following categories:
    - "Trade 5 WFLR to SFLR"
    - "Convert 100 FLR to WETH"
 
-4. REQUEST_ATTESTATION: User is asking about remote attestation
+4. PRICE_QUOTE: User wants to check the price or rate for a token swap
+   Examples:
+   - "What's the price of FLR in USDC?"
+   - "How much WETH can I get for 10 FLR?"
+   - "Check the rate between FLR and USDT"
+   - "What's the exchange rate for FLR to WETH?"
+
+5. REQUEST_ATTESTATION: User is asking about remote attestation
    Examples:
    - "Show me your attestation"
    - "Prove your identity"
    - "Can I see your remote attestation?"
 
-5. CONVERSATION: General conversation or questions
+6. CONVERSATION: General conversation or questions
    Examples:
    - "What can you do?"
    - "Tell me about Flare Network"
@@ -36,7 +43,7 @@ Classify the user's message into one of the following categories:
 
 Input: ${user_input}
 
-Output EXACTLY one of: GENERATE_ACCOUNT, SEND_TOKEN, TOKEN_SWAP, REQUEST_ATTESTATION, CONVERSATION
+Output EXACTLY one of: GENERATE_ACCOUNT, SEND_TOKEN, TOKEN_SWAP, PRICE_QUOTE, REQUEST_ATTESTATION, CONVERSATION
 """
 
 GENERATE_ACCOUNT: Final = """
@@ -241,4 +248,45 @@ For example:
 - "Trade 100 FLR for SFLR"
 
 Currently supported tokens: FLR, WFLR, USDC, USDT, WETH, SFLR
+"""
+
+price_quote: Final = """
+Extract EXACTLY two pieces of information from the input for a token price quote:
+
+1. SOURCE TOKEN (from_token)
+   Valid formats:
+   • Native token: "FLR" or "flr"
+   • Listed pairs only: "USDC", "WFLR", "USDT", "sFLR", "WETH"
+   • Case-insensitive match
+   • Strip spaces and normalize to uppercase
+   • FAIL if token not recognized
+
+2. DESTINATION TOKEN (to_token)
+   Valid formats:
+   • Same rules as source token
+   • Must be different from source token
+   • FAIL if same as source token
+   • FAIL if token not recognized
+
+Input: ${user_input}
+
+Response format:
+{
+  "from_token": "<UPPERCASE_TOKEN_SYMBOL>",
+  "to_token": "<UPPERCASE_TOKEN_SYMBOL>"
+}
+
+Processing rules:
+- Both fields MUST be present
+- DO NOT infer missing values
+- DO NOT allow same token pairs
+- Normalize token symbols to uppercase
+- FAIL if any value missing or invalid
+
+Examples:
+✓ "What's the price of FLR in USDC?" → {"from_token": "FLR", "to_token": "USDC"}
+✓ "How much WETH can I get for 10 FLR?" → {"from_token": "FLR", "to_token": "WETH"}
+✓ "Check the rate between FLR and USDT" → {"from_token": "FLR", "to_token": "USDT"}
+✗ "What's the price of FLR?" → FAIL (missing to_token)
+✗ "What's the exchange rate for FLR to FLR?" → FAIL (same token)
 """

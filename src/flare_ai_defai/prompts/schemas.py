@@ -17,17 +17,17 @@ from string import Template
 from typing import TypedDict
 
 
-class SemanticRouterResponse(Enum):
+class SemanticRouterResponse(str, Enum):
     """
-    Enum for semantic router response categories.
+    Enum for semantic router response values.
     
-    Defines the possible categories that the semantic router can classify
-    user messages into.
+    Defines the possible categories that a user message can be classified into.
     """
-
+    
     GENERATE_ACCOUNT = "GENERATE_ACCOUNT"
     SEND_TOKEN = "SEND_TOKEN"
     TOKEN_SWAP = "TOKEN_SWAP"
+    PRICE_QUOTE = "PRICE_QUOTE"
     REQUEST_ATTESTATION = "REQUEST_ATTESTATION"
     CONVERSATION = "CONVERSATION"
 

@@ -1,0 +1,10 @@
+2025-03-08 04:22:55,205 INFO Set uid to user 0 succeeded
+2025-03-08 04:22:55,210 INFO supervisord started with pid 1
+2025-03-08 04:22:56,212 INFO spawned: 'backend' with pid 7
+2025-03-08 04:22:56,214 INFO spawned: 'nginx' with pid 8
+2025-03-08 04:22:57,487 INFO success: backend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-03-08 04:22:57,488 INFO success: nginx entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-03-08 04:23:53,259 WARN received SIGINT indicating exit request
+2025-03-08 04:23:53,260 INFO waiting for backend, nginx to die
+2025-03-08 04:23:53,268 INFO stopped: nginx (exit status 0)
+2025-03-08 04:23:53,274 WARN stopped: backend (terminated by SIGTERM)
