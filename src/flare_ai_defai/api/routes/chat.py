@@ -21,7 +21,7 @@ from web3.exceptions import Web3RPCError
 
 from flare_ai_defai.ai import GeminiProvider
 from flare_ai_defai.attestation import Vtpm, VtpmAttestationError
-from flare_ai_defai.blockchain import FlareProvider, SparkDEXProvider
+from flare_ai_defai.blockchain import FlareProvider, BlazeDEXProvider
 from flare_ai_defai.prompts import PromptService, SemanticRouterResponse
 from flare_ai_defai.settings import settings
 
@@ -319,20 +319,20 @@ class ChatRouter:
         to_token = swap_json["to_token"]
         amount = swap_json["amount"]
         
-        # Initialize SparkDEX provider
-        sparkdex = SparkDEXProvider(self.blockchain.w3)
+        # Initialize BlazeDEX provider
+        blazedex = BlazeDEXProvider(self.blockchain.w3)
         
         try:
             # Get a quote for the swap
-            expected_output, price_impact = sparkdex.get_swap_quote(
+            expected_output, price_impact = blazedex.get_swap_quote(
                 from_token, to_token, amount
             )
             
             # If swapping a token other than FLR, we need to approve it first
             if from_token != "FLR":
                 # Check if approval is needed
-                token_address = sparkdex.get_token_address(from_token)
-                token_contract = sparkdex.get_token_contract(token_address)
+                token_address = blazedex.get_token_address(from_token)
+                token_contract = blazedex.get_token_contract(token_address)
                 
                 # Get token decimals
                 decimals = token_contract.functions.decimals().call()
@@ -341,12 +341,12 @@ class ChatRouter:
                 # Check current allowance
                 allowance = token_contract.functions.allowance(
                     self.blockchain.address, 
-                    sparkdex.router.address
+                    blazedex.router.address
                 ).call()
                 
                 if allowance < amount_in_token_units:
                     # Create approval transaction
-                    approval_tx = sparkdex.approve_token(
+                    approval_tx = blazedex.approve_token(
                         from_token, amount, self.blockchain.address
                     )
                     
@@ -357,12 +357,12 @@ class ChatRouter:
                     
                     approval_preview = (
                         f"Transaction Preview (1/2): Approve {amount} {from_token} "
-                        f"for trading on SparkDEX\nType CONFIRM to proceed."
+                        f"for trading on BlazeDEX\nType CONFIRM to proceed."
                     )
                     return {"response": approval_preview}
             
             # Create the swap transaction
-            swap_tx = sparkdex.create_swap_tx(
+            swap_tx = blazedex.create_swap_tx(
                 from_token, to_token, amount, self.blockchain.address
             )
             
@@ -452,11 +452,11 @@ class ChatRouter:
             # Use a default amount of 1.0 for price quotes
             amount = 1.0
             
-            # Initialize SparkDEX provider
-            sparkdex = SparkDEXProvider(self.blockchain.w3)
+            # Initialize BlazeDEX provider
+            blazedex = BlazeDEXProvider(self.blockchain.w3)
             
             # Get a quote for the swap
-            expected_output, price_impact = sparkdex.get_swap_quote(
+            expected_output, price_impact = blazedex.get_swap_quote(
                 from_token, to_token, amount
             )
             
