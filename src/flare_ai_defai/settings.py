@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # API key for accessing Google's Gemini AI service
     gemini_api_key: str = ""
     # The Gemini model identifier to use
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-2.0-pro"
     # API version to use at the backend
     api_version: str = "v1"
     # URL for the Flare Network RPC provider

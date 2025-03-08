@@ -21,6 +21,10 @@ Classify the user's message into one of the following categories:
    - "Exchange my FLR for USDT"
    - "Trade 5 WFLR to SFLR"
    - "Convert 100 FLR to WETH"
+   - "do the swap: 1 FLR to testUSD"
+   - "swap 1 FLR to whatever in testUSD"
+   - "swap 5 testFIL to testALGO"
+   - "trade 10 testBCH for testDGB"
 
 4. PRICE_QUOTE: User wants to check the price or rate for a token swap
    Examples:
@@ -115,8 +119,8 @@ Extract EXACTLY three pieces of information from the input for a token swap oper
 
 1. SOURCE TOKEN (from_token)
    Valid formats:
-   • Native token: "FLR" or "flr"
-   • Listed pairs only: "USDC", "WFLR", "USDT", "sFLR", "WETH", "C2FLR", "WC2FLR", "testALGO", "testBCH", "testDGB", "testFIL", "testXLM"
+   • Native token: "FLR" or "flr" or "C2FLR"
+   • Listed pairs only: "FLR", "C2FLR", "WFLR", "WC2FLR", "testALGO", "testBCH", "testDGB", "testFIL", "testUSD", "testXLM", "USDC", "USDT", "sFLR", "WETH"
    • Case-insensitive match
    • Strip spaces and normalize to uppercase
    • FAIL if token not recognized
@@ -162,6 +166,10 @@ Processing rules:
 Examples:
 ✓ "swap 100 FLR to USDC" → {"from_token": "FLR", "to_token": "USDC", "amount": 100.0}
 ✓ "exchange 50.5 flr for usdc" → {"from_token": "FLR", "to_token": "USDC", "amount": 50.5}
+✓ "do the swap: 1 FLR to testUSD" → {"from_token": "FLR", "to_token": "TESTUSD", "amount": 1.0}
+✓ "swap 1 FLR to whatever in testUSD" → {"from_token": "FLR", "to_token": "TESTUSD", "amount": 1.0}
+✓ "swap 5 testFIL to testALGO" → {"from_token": "TESTFIL", "to_token": "TESTALGO", "amount": 5.0}
+✓ "trade 10 testBCH for testDGB" → {"from_token": "TESTBCH", "to_token": "TESTDGB", "amount": 10.0}
 ✗ "swap flr to flr" → FAIL (same token)
 ✗ "swap tokens" → FAIL (missing amount)
 """
@@ -245,9 +253,10 @@ I need a bit more information to process your swap request. Please specify:
 For example:
 - "Swap 10 FLR to USDC"
 - "Exchange 5 USDC for WFLR"
-- "Trade 100 FLR for SFLR"
+- "Trade 100 FLR for testUSD"
+- "Swap 1 FLR to testFIL"
 
-Currently supported tokens: FLR, WFLR, USDC, USDT, WETH, SFLR
+Currently supported tokens: FLR, C2FLR, WFLR, WC2FLR, testALGO, testBCH, testDGB, testFIL, testUSD, testXLM, USDC, USDT, sFLR, WETH
 """
 
 FOLLOW_UP_TOKEN_SEND: Final = """
