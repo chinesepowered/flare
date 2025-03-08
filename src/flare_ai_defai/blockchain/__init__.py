@@ -1,3 +1,4 @@
 from .flare import FlareProvider
+from .sparkdex import SparkDEXProvider
 
-__all__ = ["FlareProvider"]
+__all__ = ["FlareProvider", "SparkDEXProvider"]

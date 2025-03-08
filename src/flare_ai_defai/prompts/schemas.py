@@ -17,27 +17,19 @@ from string import Template
 from typing import TypedDict
 
 
-class SemanticRouterResponse(str, Enum):
+class SemanticRouterResponse(Enum):
     """
-    Enumeration of possible semantic routing outcomes for user queries.
-
-    This enum defines the various types of operations that can be triggered
-    based on user input analysis. Each value represents a specific action
-    or response type that the system can handle.
-
-    Attributes:
-        GENERATE_ACCOUNT: Route to account generation workflow
-        SEND_TOKEN: Route to token sending workflow
-        SWAP_TOKEN: Route to token swapping workflow
-        REQUEST_ATTESTATION: Route to attestation request handling
-        CONVERSATIONAL: Route to general conversational response
+    Enum for semantic router response categories.
+    
+    Defines the possible categories that the semantic router can classify
+    user messages into.
     """
 
-    GENERATE_ACCOUNT = "GenerateAccount"
-    SEND_TOKEN = "SendToken"
-    SWAP_TOKEN = "SwapToken"
-    REQUEST_ATTESTATION = "RequestAttestation"
-    CONVERSATIONAL = "Conversational"
+    GENERATE_ACCOUNT = "GENERATE_ACCOUNT"
+    SEND_TOKEN = "SEND_TOKEN"
+    TOKEN_SWAP = "TOKEN_SWAP"
+    REQUEST_ATTESTATION = "REQUEST_ATTESTATION"
+    CONVERSATION = "CONVERSATION"
 
 
 class TokenSendResponse(TypedDict):

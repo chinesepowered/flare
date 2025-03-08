@@ -21,7 +21,7 @@ from web3.exceptions import Web3RPCError
 
 from flare_ai_defai.ai import GeminiProvider
 from flare_ai_defai.attestation import Vtpm, VtpmAttestationError
-from flare_ai_defai.blockchain import FlareProvider
+from flare_ai_defai.blockchain import FlareProvider, SparkDEXProvider
 from flare_ai_defai.prompts import PromptService, SemanticRouterResponse
 from flare_ai_defai.settings import settings
 
@@ -203,16 +203,17 @@ class ChatRouter:
         handlers = {
             SemanticRouterResponse.GENERATE_ACCOUNT: self.handle_generate_account,
             SemanticRouterResponse.SEND_TOKEN: self.handle_send_token,
-            SemanticRouterResponse.SWAP_TOKEN: self.handle_swap_token,
+            SemanticRouterResponse.TOKEN_SWAP: self.handle_token_swap,
             SemanticRouterResponse.REQUEST_ATTESTATION: self.handle_attestation,
-            SemanticRouterResponse.CONVERSATIONAL: self.handle_conversation,
+            SemanticRouterResponse.CONVERSATION: self.handle_conversation,
         }
-
+        
         handler = handlers.get(route)
-        if not handler:
-            return {"response": "Unsupported route"}
-
-        return await handler(message)
+        if handler:
+            return await handler(message)
+        else:
+            # Default to conversation if no matching handler
+            return await self.handle_conversation(message)
 
     async def handle_generate_account(self, _: str) -> dict[str, str]:
         """
@@ -278,17 +279,106 @@ class ChatRouter:
         )
         return {"response": formatted_preview}
 
-    async def handle_swap_token(self, _: str) -> dict[str, str]:
+    async def handle_token_swap(self, message: str) -> dict[str, str]:
         """
-        Handle token swap requests (currently unsupported).
-
+        Handle token swap requests.
+        
         Args:
-            _: Unused message parameter
-
+            message: Message containing token swap details
+            
         Returns:
-            dict[str, str]: Response indicating unsupported operation
+            dict[str, str]: Response containing transaction preview or follow-up prompt
         """
-        return {"response": "Sorry I can't do that right now"}
+        if not self.blockchain.address:
+            return await self.handle_generate_account(message)
+        
+        # Get the token swap parameters from the message
+        prompt, mime_type, schema = self.prompts.get_formatted_prompt(
+            "token_swap", user_input=message
+        )
+        swap_response = self.ai.generate(
+            prompt=prompt, response_mime_type=mime_type, response_schema=schema
+        )
+        swap_json = json.loads(swap_response.text)
+        
+        # Validate the swap parameters
+        if not all(key in swap_json for key in ["from_token", "to_token", "amount"]):
+            prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_swap")
+            follow_up_response = self.ai.generate(prompt)
+            return {"response": follow_up_response.text}
+        
+        from_token = swap_json["from_token"]
+        to_token = swap_json["to_token"]
+        amount = swap_json["amount"]
+        
+        # Initialize SparkDEX provider
+        sparkdex = SparkDEXProvider(self.blockchain.w3)
+        
+        try:
+            # Get a quote for the swap
+            expected_output, price_impact = sparkdex.get_swap_quote(
+                from_token, to_token, amount
+            )
+            
+            # If swapping a token other than FLR, we need to approve it first
+            if from_token != "FLR":
+                # Check if approval is needed
+                token_address = sparkdex.get_token_address(from_token)
+                token_contract = sparkdex.get_token_contract(token_address)
+                
+                # Get token decimals
+                decimals = token_contract.functions.decimals().call()
+                amount_in_token_units = int(amount * (10 ** decimals))
+                
+                # Check current allowance
+                allowance = token_contract.functions.allowance(
+                    self.blockchain.address, 
+                    sparkdex.router.address
+                ).call()
+                
+                if allowance < amount_in_token_units:
+                    # Create approval transaction
+                    approval_tx = sparkdex.approve_token(
+                        from_token, amount, self.blockchain.address
+                    )
+                    
+                    # Add approval transaction to queue
+                    self.blockchain.add_tx_to_queue(
+                        msg=f"Approve {from_token} for swap", tx=approval_tx
+                    )
+                    
+                    approval_preview = (
+                        f"Transaction Preview (1/2): Approve {amount} {from_token} "
+                        f"for trading on SparkDEX\nType CONFIRM to proceed."
+                    )
+                    return {"response": approval_preview}
+            
+            # Create the swap transaction
+            swap_tx = sparkdex.create_swap_tx(
+                from_token, to_token, amount, self.blockchain.address
+            )
+            
+            # Add swap transaction to queue
+            self.blockchain.add_tx_to_queue(msg=message, tx=swap_tx)
+            
+            # Format the transaction preview
+            if from_token == "FLR":
+                value_display = f"{Web3.from_wei(swap_tx.get('value', 0), 'ether')} {from_token}"
+            else:
+                value_display = f"{amount} {from_token}"
+                
+            swap_preview = (
+                f"Transaction Preview: Swap {value_display} for approximately "
+                f"{expected_output:.6f} {to_token} (Price Impact: {price_impact:.2f}%)\n"
+                f"Type CONFIRM to proceed."
+            )
+            
+            return {"response": swap_preview}
+            
+        except Exception as e:
+            self.logger.error("token_swap_failed", error=str(e))
+            error_response = f"Sorry, I couldn't process your swap request: {str(e)}"
+            return {"response": error_response}
 
     async def handle_attestation(self, _: str) -> dict[str, str]:
         """

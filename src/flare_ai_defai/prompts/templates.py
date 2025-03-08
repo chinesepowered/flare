@@ -1,42 +1,42 @@
 from typing import Final
 
 SEMANTIC_ROUTER: Final = """
-Classify the following user input into EXACTLY ONE category. Analyze carefully and choose the most specific matching category.
+Classify the user's message into one of the following categories:
 
-Categories (in order of precedence):
-1. GENERATE_ACCOUNT
-   • Keywords: create wallet, new account, generate address, make wallet
-   • Must express intent to create/generate new account/wallet
-   • Ignore if just asking about existing accounts
+1. GENERATE_ACCOUNT: User wants to create a new wallet or account
+   Examples:
+   - "Create a wallet for me"
+   - "I need a new account"
+   - "Generate a wallet"
 
-2. SEND_TOKEN
-   • Keywords: send, transfer, pay, give tokens
-   • Must include intent to transfer tokens to another address
-   • Should involve one-way token movement
+2. SEND_TOKEN: User wants to send tokens to an address
+   Examples:
+   - "Send 5 FLR to 0x123..."
+   - "Transfer 10 tokens to this address"
+   - "I want to send some FLR"
 
-3. SWAP_TOKEN
-   • Keywords: swap, exchange, trade, convert tokens
-   • Must involve exchanging one token type for another
-   • Should mention both source and target tokens
+3. TOKEN_SWAP: User wants to swap one token for another
+   Examples:
+   - "Swap 10 FLR for USDC"
+   - "Exchange my FLR for USDT"
+   - "Trade 5 WFLR to SFLR"
+   - "Convert 100 FLR to WETH"
 
-4. REQUEST_ATTESTATION
-   • Keywords: attestation, verify, prove, check enclave
-   • Must specifically request verification or attestation
-   • Related to security or trust verification
+4. REQUEST_ATTESTATION: User is asking about remote attestation
+   Examples:
+   - "Show me your attestation"
+   - "Prove your identity"
+   - "Can I see your remote attestation?"
 
-5. CONVERSATIONAL (default)
-   • Use when input doesn't clearly match above categories
-   • General questions, greetings, or unclear requests
-   • Any ambiguous or multi-category inputs
+5. CONVERSATION: General conversation or questions
+   Examples:
+   - "What can you do?"
+   - "Tell me about Flare Network"
+   - "How does this work?"
 
 Input: ${user_input}
 
-Instructions:
-- Choose ONE category only
-- Select most specific matching category
-- Default to CONVERSATIONAL if unclear
-- Ignore politeness phrases or extra context
-- Focus on core intent of request
+Output EXACTLY one of: GENERATE_ACCOUNT, SEND_TOKEN, TOKEN_SWAP, REQUEST_ATTESTATION, CONVERSATION
 """
 
 GENERATE_ACCOUNT: Final = """
@@ -226,4 +226,19 @@ Great news! Your transaction has been successfully confirmed. 🎉
 [See transaction on Explorer](${block_explorer}/tx/${tx_hash})
 
 Your transaction is now securely recorded on the blockchain.
+"""
+
+FOLLOW_UP_TOKEN_SWAP: Final = """
+I need a bit more information to process your swap request. Please specify:
+
+1. The token you want to swap FROM (e.g., FLR, USDC, WFLR)
+2. The token you want to swap TO (e.g., USDC, WFLR, SFLR)
+3. The amount you want to swap
+
+For example:
+- "Swap 10 FLR to USDC"
+- "Exchange 5 USDC for WFLR"
+- "Trade 100 FLR for SFLR"
+
+Currently supported tokens: FLR, WFLR, USDC, USDT, WETH, SFLR
 """

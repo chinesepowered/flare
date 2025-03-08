@@ -158,7 +158,7 @@ class SparkDEXProvider:
         decimals = token_contract.functions.decimals().call()
         
         # Convert to human-readable format
-        return float(balance / (10 ** decimals))
+        return float(balance) / (10 ** decimals)
     
     def approve_token(self, token_symbol: str, amount: float, from_address: ChecksumAddress) -> TxParams:
         """
@@ -363,6 +363,23 @@ class SparkDEXProvider:
             elif not is_from_native and is_to_native:
                 # Swapping Token to FLR
                 tx = self.router.functions.swapExactTokensForETH(
+                    amount_in_token_units,
+                    min_amount_out,
+                    path,
+                    from_address,
+                    deadline
+                ).build_transaction({
+                    "from": from_address,
+                    "nonce": self.w3.eth.get_transaction_count(from_address),
+                    "gas": 200000,  # Estimated gas
+                    "maxFeePerGas": self.w3.eth.gas_price,
+                    "maxPriorityFeePerGas": self.w3.eth.max_priority_fee,
+                    "chainId": self.w3.eth.chain_id,
+                    "type": 2,  # EIP-1559 transaction
+                })
+            else:
+                # Swapping Token to Token
+                tx = self.router.functions.swapExactTokensForTokens(
                     amount_in_token_units,
                     min_amount_out,
                     path,
