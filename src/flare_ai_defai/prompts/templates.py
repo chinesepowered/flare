@@ -17,21 +17,21 @@ Classify the user's message into one of the following categories:
 
 3. TOKEN_SWAP: User wants to swap one token for another
    Examples:
-   - "Swap 10 FLR for USDC"
-   - "Exchange my FLR for USDT"
-   - "Trade 5 WFLR to SFLR"
-   - "Convert 100 FLR to WETH"
-   - "do the swap: 1 FLR to testUSD"
-   - "swap 1 FLR to whatever in testUSD"
-   - "swap 5 testFIL to testALGO"
-   - "trade 10 testBCH for testDGB"
+   - "Swap 10 FLR for USDT"
+   - "Exchange my FLR for eUSDT"
+   - "Trade 5 WFLR to sFLR"
+   - "Convert 100 FLR to USDC.e"
+   - "do the swap: 1 FLR to USDC.e"
+   - "swap 1 FLR to whatever in sFLR"
+   - "swap 5 eETH to WFLR"
+   - "trade 10 JOULE for BNZ"
 
 4. PRICE_QUOTE: User wants to check the price or rate for a token swap
    Examples:
-   - "What's the price of FLR in USDC?"
-   - "How much WETH can I get for 10 FLR?"
-   - "Check the rate between FLR and USDT"
-   - "What's the exchange rate for FLR to WETH?"
+   - "What's the price of FLR in USDT?"
+   - "How much eETH can I get for 10 FLR?"
+   - "Check the rate between FLR and eUSDT"
+   - "What's the exchange rate for FLR to USDC.e?"
 
 5. REQUEST_ATTESTATION: User is asking about remote attestation
    Examples:
@@ -119,8 +119,8 @@ Extract EXACTLY three pieces of information from the input for a token swap oper
 
 1. SOURCE TOKEN (from_token)
    Valid formats:
-   • Native token: "FLR" or "flr" or "C2FLR"
-   • Listed pairs only: "FLR", "C2FLR", "WFLR", "WC2FLR", "testALGO", "testBCH", "testDGB", "testFIL", "testUSD", "testXLM", "USDC", "USDT", "sFLR", "WETH"
+   • Native token: "FLR" or "flr"
+   • Listed pairs only: "FLR", "WFLR", "BNZ", "BUNNY", "eUSDT", "eETH", "FINU", "FLX", "GEMIN", "GFLR", "JOULE", "PFL", "PHIL", "POODLE", "sFLR", "USDC.e", "USDT", "USDX"
    • Case-insensitive match
    • Strip spaces and normalize to uppercase
    • FAIL if token not recognized
@@ -164,12 +164,12 @@ Processing rules:
 - FAIL if any value missing or invalid
 
 Examples:
-✓ "swap 100 FLR to USDC" → {"from_token": "FLR", "to_token": "USDC", "amount": 100.0}
-✓ "exchange 50.5 flr for usdc" → {"from_token": "FLR", "to_token": "USDC", "amount": 50.5}
-✓ "do the swap: 1 FLR to testUSD" → {"from_token": "FLR", "to_token": "TESTUSD", "amount": 1.0}
-✓ "swap 1 FLR to whatever in testUSD" → {"from_token": "FLR", "to_token": "TESTUSD", "amount": 1.0}
-✓ "swap 5 testFIL to testALGO" → {"from_token": "TESTFIL", "to_token": "TESTALGO", "amount": 5.0}
-✓ "trade 10 testBCH for testDGB" → {"from_token": "TESTBCH", "to_token": "TESTDGB", "amount": 10.0}
+✓ "swap 100 FLR to USDT" → {"from_token": "FLR", "to_token": "USDT", "amount": 100.0}
+✓ "exchange 50.5 flr for eUSDT" → {"from_token": "FLR", "to_token": "EUSDT", "amount": 50.5}
+✓ "do the swap: 1 FLR to USDC.e" → {"from_token": "FLR", "to_token": "USDC.E", "amount": 1.0}
+✓ "swap 1 FLR to whatever in sFLR" → {"from_token": "FLR", "to_token": "SFLR", "amount": 1.0}
+✓ "swap 5 eETH to WFLR" → {"from_token": "EETH", "to_token": "WFLR", "amount": 5.0}
+✓ "trade 10 JOULE for BNZ" → {"from_token": "JOULE", "to_token": "BNZ", "amount": 10.0}
 ✗ "swap flr to flr" → FAIL (same token)
 ✗ "swap tokens" → FAIL (missing amount)
 """
@@ -251,12 +251,12 @@ I need a bit more information to process your swap request. Please specify:
 3. The amount you want to swap
 
 For example:
-- "Swap 10 FLR to USDC"
-- "Exchange 5 USDC for WFLR"
-- "Trade 100 FLR for testUSD"
-- "Swap 1 FLR to testFIL"
+- "Swap 10 FLR to USDT"
+- "Exchange 5 eUSDT for WFLR"
+- "Trade 100 FLR for sFLR"
+- "Swap 1 FLR to USDC.e"
 
-Currently supported tokens: FLR, C2FLR, WFLR, WC2FLR, testALGO, testBCH, testDGB, testFIL, testUSD, testXLM, USDC, USDT, sFLR, WETH
+Currently supported tokens: FLR, WFLR, BNZ, BUNNY, eUSDT, eETH, FINU, FLX, GEMIN, GFLR, JOULE, PFL, PHIL, POODLE, sFLR, USDC.e, USDT, USDX
 """
 
 FOLLOW_UP_TOKEN_SEND: Final = """
@@ -277,7 +277,7 @@ Extract EXACTLY two pieces of information from the input for a token price quote
 1. SOURCE TOKEN (from_token)
    Valid formats:
    • Native token: "FLR" or "flr"
-   • Listed pairs only: "USDC", "WFLR", "USDT", "sFLR", "WETH"
+   • Listed pairs only: "FLR", "WFLR", "BNZ", "BUNNY", "eUSDT", "eETH", "FINU", "FLX", "GEMIN", "GFLR", "JOULE", "PFL", "PHIL", "POODLE", "sFLR", "USDC.e", "USDT", "USDX"
    • Case-insensitive match
    • Strip spaces and normalize to uppercase
    • FAIL if token not recognized
@@ -305,9 +305,9 @@ Processing rules:
 - FAIL if any value missing or invalid
 
 Examples:
-✓ "What's the price of FLR in USDC?" → {"from_token": "FLR", "to_token": "USDC"}
-✓ "How much WETH can I get for 10 FLR?" → {"from_token": "FLR", "to_token": "WETH"}
-✓ "Check the rate between FLR and USDT" → {"from_token": "FLR", "to_token": "USDT"}
+✓ "What's the price of FLR in USDT?" → {"from_token": "FLR", "to_token": "USDT"}
+✓ "How much eETH can I get for 10 FLR?" → {"from_token": "FLR", "to_token": "EETH"}
+✓ "Check the rate between FLR and eUSDT" → {"from_token": "FLR", "to_token": "EUSDT"}
 ✗ "What's the price of FLR?" → FAIL (missing to_token)
 ✗ "What's the exchange rate for FLR to FLR?" → FAIL (same token)
 """

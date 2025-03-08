@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     # URL for the Flare Network block explorer
     web3_explorer_url: str = "https://coston2-explorer.flare.network/"
 
+    # Main Net
+    web3_provider_url: str = "https://flare-api.flare.network/ext/C/rpc"
+    web3_explorer_url: str = "https://flare-explorer.flare.network/"
+
     model_config = SettingsConfigDict(
         # This enables .env file support
         env_file=".env",
