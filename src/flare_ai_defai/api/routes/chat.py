@@ -51,6 +51,7 @@ class ChatRouter:
     Attributes:
         ai (GeminiProvider): Provider for AI capabilities
         blockchain (FlareProvider): Provider for blockchain operations
+        blazedex (BlazeDEXProvider): Provider for DEX operations
         attestation (Vtpm): Provider for attestation services
         prompts (PromptService): Service for managing prompts
         logger (BoundLogger): Structured logger for the chat router
@@ -77,6 +78,7 @@ class ChatRouter:
         self.blockchain = blockchain
         self.attestation = attestation
         self.prompts = prompts
+        self.blazedex = BlazeDEXProvider(self.blockchain.w3)
         self.logger = logger.bind(router="chat")
         self._setup_routes()
 
@@ -192,11 +194,11 @@ class ChatRouter:
     ) -> dict[str, str]:
         """
         Route a message to the appropriate handler based on semantic route.
-
+        
         Args:
             route: Determined semantic route
             message: Original message to handle
-
+            
         Returns:
             dict[str, str]: Response from the appropriate handler
         """
@@ -206,13 +208,14 @@ class ChatRouter:
             SemanticRouterResponse.TOKEN_SWAP: self.handle_token_swap,
             SemanticRouterResponse.PRICE_QUOTE: self.handle_price_quote,
             SemanticRouterResponse.REQUEST_ATTESTATION: self.handle_attestation,
+            SemanticRouterResponse.CHECK_LIQUIDITY: self.handle_check_liquidity,
             SemanticRouterResponse.CONVERSATION: self.handle_conversation,
         }
-
+        
         handler = handlers.get(route)
         if not handler:
             return {"response": "Unsupported route"}
-
+        
         return await handler(message)
 
     async def handle_generate_account(self, _: str) -> dict[str, str]:
@@ -319,20 +322,17 @@ class ChatRouter:
         to_token = swap_json["to_token"]
         amount = swap_json["amount"]
         
-        # Initialize BlazeDEX provider
-        blazedex = BlazeDEXProvider(self.blockchain.w3)
-        
         try:
             # Get a quote for the swap
-            expected_output, price_impact = blazedex.get_swap_quote(
+            expected_output, price_impact = self.blazedex.get_swap_quote(
                 from_token, to_token, amount
             )
             
             # If swapping a token other than FLR, we need to approve it first
             if from_token != "FLR":
                 # Check if approval is needed
-                token_address = blazedex.get_token_address(from_token)
-                token_contract = blazedex.get_token_contract(token_address)
+                token_address = self.blazedex.get_token_address(from_token)
+                token_contract = self.blazedex.get_token_contract(token_address)
                 
                 # Get token decimals
                 decimals = token_contract.functions.decimals().call()
@@ -341,12 +341,12 @@ class ChatRouter:
                 # Check current allowance
                 allowance = token_contract.functions.allowance(
                     self.blockchain.address, 
-                    blazedex.router_contract.address
+                    self.blazedex.router_contract.address
                 ).call()
                 
                 if allowance < amount_in_token_units:
                     # Create approval transaction
-                    approval_tx = blazedex.approve_token(
+                    approval_tx = self.blazedex.approve_token(
                         from_token, amount, self.blockchain.address
                     )
                     
@@ -362,7 +362,7 @@ class ChatRouter:
                     return {"response": approval_preview}
             
             # Create the swap transaction
-            swap_tx = blazedex.create_swap_tx(
+            swap_tx = self.blazedex.create_swap_tx(
                 from_token, to_token, amount, self.blockchain.address
             )
             
@@ -452,11 +452,8 @@ class ChatRouter:
             # Use a default amount of 1.0 for price quotes
             amount = 1.0
             
-            # Initialize BlazeDEX provider
-            blazedex = BlazeDEXProvider(self.blockchain.w3)
-            
             # Get a quote for the swap
-            expected_output, price_impact = blazedex.get_swap_quote(
+            expected_output, price_impact = self.blazedex.get_swap_quote(
                 from_token, to_token, amount
             )
             
@@ -474,3 +471,67 @@ class ChatRouter:
             self.logger.error("price_quote_failed", error=str(e))
             error_response = f"Sorry, I couldn't get a price quote: {str(e)}"
             return {"response": error_response}
+
+    async def handle_check_liquidity(self, message: str) -> dict[str, str]:
+        """
+        Handle liquidity pool status check requests.
+        
+        Args:
+            message: Message containing liquidity check request
+            
+        Returns:
+            dict[str, str]: Response containing liquidity pool information
+        """
+        try:
+            # For now, we'll use a simple approach to extract token pairs
+            # Later, you can implement a more sophisticated extraction using AI
+            tokens = []
+            message = message.upper()
+            
+            # Look for common token symbols in the message
+            for token in self.blazedex.TOKEN_ADDRESSES.keys():
+                if token in message:
+                    tokens.append(token)
+            
+            # If we couldn't find exactly two tokens, provide a helpful response
+            if len(tokens) != 2:
+                return {
+                    "response": "I couldn't clearly identify which token pair you're asking about. "
+                    "Please specify both tokens clearly, for example: 'Check liquidity pool status for FLR to USDT'"
+                }
+            
+            token_a, token_b = tokens[0], tokens[1]
+            
+            # Check if pair exists
+            pair_exists = self.blazedex.check_pair_exists(token_a, token_b)
+            
+            if not pair_exists:
+                return {
+                    "response": f"The {token_a}/{token_b} pair doesn't exist on BlazeSwap. "
+                    f"This means there isn't a direct trading route between these tokens. "
+                    f"You might need to use an intermediate token like FLR or WFLR to trade between them."
+                }
+            
+            # Get liquidity pool status
+            pool_status = self.blazedex.get_liquidity_pool_status(token_a, token_b)
+            
+            # Format the response
+            response = (
+                f"Here's the current status of the {token_a}/{token_b} liquidity pool on BlazeSwap:\n\n"
+                f"- Pool exists: Yes\n"
+                f"- Pair address: {pool_status['pair_address']}\n"
+                f"- {token_a} reserves: {pool_status['reserves_a']:,.2f} {token_a}\n"
+                f"- {token_b} reserves: {pool_status['reserves_b']:,.2f} {token_b}\n"
+                f"- Total liquidity: {pool_status['total_liquidity']:,.2f} LP tokens\n\n"
+                f"This pool has {'good' if pool_status['total_liquidity'] > 0 else 'limited'} liquidity, "
+                f"which means you {'should' if pool_status['total_liquidity'] > 0 else 'might not'} be able to trade "
+                f"between {token_a} and {token_b} with minimal slippage for reasonable trade sizes."
+            )
+            
+            return {"response": response}
+        except Exception as e:
+            self.logger.exception("check_liquidity_error", error=str(e))
+            return {
+                "response": f"I encountered an error while checking the liquidity pool status: {str(e)}. "
+                f"Please make sure you're using valid token symbols."
+            }

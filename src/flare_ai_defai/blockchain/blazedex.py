@@ -61,7 +61,6 @@ BLAZESWAP_FACTORY_ADDRESS = "0x440602f459D7Dd500a74528003e6A20A46d6e2A6"
 BLAZESWAP_ROUTER_ADDRESS = "0xe3A1b355ca63abCBC9589334B5e609583C7BAa06"
 
 TOKEN_ADDRESSES = {
-    "C2FLR": "0x0000000000000000000000000000000000000000",  # Native token
     "FLR": "0x0000000000000000000000000000000000000000",  # Native token
     "WFLR": "0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d",  # Wrapped Flare
     "BNZ": "0xfD3449E8Ee31117a848D41Ee20F497a9bCb53164",  # Bonez
@@ -415,4 +414,175 @@ class BlazeDEXProvider:
             slippage=slippage
         )
         
-        return tx 
+        return tx
+    
+    def check_pair_exists(self, token_a: str, token_b: str) -> bool:
+        """
+        Check if a trading pair exists on BlazeSwap.
+        
+        Args:
+            token_a (str): The first token symbol
+            token_b (str): The second token symbol
+            
+        Returns:
+            bool: True if the pair exists, False otherwise
+        """
+        token_a = token_a.upper()
+        token_b = token_b.upper()
+        
+        # Get token addresses
+        token_a_address = self.get_token_address(token_a)
+        token_b_address = self.get_token_address(token_b)
+        
+        # Handle native FLR token
+        if token_a == "FLR":
+            token_a_address = self.wflr_address
+        if token_b == "FLR":
+            token_b_address = self.wflr_address
+        
+        try:
+            # Use the factory contract's getPair function to check if the pair exists
+            pair_address = self.factory_contract.functions.getPair(
+                token_a_address,
+                token_b_address
+            ).call()
+            
+            # If the pair address is the zero address, the pair doesn't exist
+            exists = pair_address != "0x0000000000000000000000000000000000000000"
+            
+            self.logger.info(
+                "check_pair_exists",
+                token_a=token_a,
+                token_b=token_b,
+                pair_exists=exists,
+                pair_address=pair_address if exists else None
+            )
+            
+            return exists
+            
+        except Exception as e:
+            self.logger.error(
+                "check_pair_exists_error",
+                token_a=token_a,
+                token_b=token_b,
+                error=str(e)
+            )
+            return False
+    
+    def get_liquidity_pool_status(self, token_a: str, token_b: str) -> dict[str, Any]:
+        """
+        Get the status of a liquidity pool for a token pair.
+        
+        Args:
+            token_a (str): The first token symbol
+            token_b (str): The second token symbol
+            
+        Returns:
+            dict: A dictionary containing pool information:
+                - exists (bool): Whether the pool exists
+                - pair_address (str): The address of the pair contract (if exists)
+                - reserves_a (float): The reserves of token A in human-readable format (if exists)
+                - reserves_b (float): The reserves of token B in human-readable format (if exists)
+                - total_liquidity (float): The total liquidity in the pool (if exists)
+                
+        Raises:
+            ValueError: If the token symbols are not recognized
+        """
+        token_a = token_a.upper()
+        token_b = token_b.upper()
+        
+        # Initialize result dictionary
+        result = {
+            "exists": False,
+            "pair_address": None,
+            "reserves_a": 0.0,
+            "reserves_b": 0.0,
+            "total_liquidity": 0.0
+        }
+        
+        # Get token addresses
+        token_a_address = self.get_token_address(token_a)
+        token_b_address = self.get_token_address(token_b)
+        
+        # Handle native FLR token
+        if token_a == "FLR":
+            token_a_address = self.wflr_address
+        if token_b == "FLR":
+            token_b_address = self.wflr_address
+        
+        try:
+            # Check if the pair exists
+            pair_address = self.factory_contract.functions.getPair(
+                token_a_address,
+                token_b_address
+            ).call()
+            
+            # If the pair address is the zero address, the pair doesn't exist
+            if pair_address == "0x0000000000000000000000000000000000000000":
+                return result
+            
+            # Update result with pair existence and address
+            result["exists"] = True
+            result["pair_address"] = pair_address
+            
+            # Get the pair contract
+            pair_abi = json.loads('''[
+                {"constant":true,"inputs":[],"name":"getReserves","outputs":[{"name":"reserve0","type":"uint112"},{"name":"reserve1","type":"uint112"},{"name":"blockTimestampLast","type":"uint32"}],"payable":false,"stateMutability":"view","type":"function"},
+                {"constant":true,"inputs":[],"name":"token0","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},
+                {"constant":true,"inputs":[],"name":"token1","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},
+                {"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}
+            ]''')
+            pair_contract = self.w3.eth.contract(address=pair_address, abi=pair_abi)
+            
+            # Get the tokens in the pair
+            token0 = pair_contract.functions.token0().call()
+            token1 = pair_contract.functions.token1().call()
+            
+            # Get the reserves
+            reserves = pair_contract.functions.getReserves().call()
+            reserve0 = reserves[0]
+            reserve1 = reserves[1]
+            
+            # Get token decimals
+            token0_contract = self.get_token_contract(token0)
+            token1_contract = self.get_token_contract(token1)
+            decimals0 = token0_contract.functions.decimals().call()
+            decimals1 = token1_contract.functions.decimals().call()
+            
+            # Convert reserves to human-readable format
+            reserve0_human = reserve0 / (10 ** decimals0)
+            reserve1_human = reserve1 / (10 ** decimals1)
+            
+            # Determine which token is which in the pair
+            if token0.lower() == token_a_address.lower():
+                result["reserves_a"] = reserve0_human
+                result["reserves_b"] = reserve1_human
+            else:
+                result["reserves_a"] = reserve1_human
+                result["reserves_b"] = reserve0_human
+            
+            # Get total liquidity
+            total_supply = pair_contract.functions.totalSupply().call()
+            result["total_liquidity"] = total_supply / (10 ** 18)  # LP tokens typically have 18 decimals
+            
+            self.logger.info(
+                "get_liquidity_pool_status",
+                token_a=token_a,
+                token_b=token_b,
+                pair_exists=True,
+                pair_address=pair_address,
+                reserves_a=result["reserves_a"],
+                reserves_b=result["reserves_b"],
+                total_liquidity=result["total_liquidity"]
+            )
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(
+                "get_liquidity_pool_status_error",
+                token_a=token_a,
+                token_b=token_b,
+                error=str(e)
+            )
+            return result 
