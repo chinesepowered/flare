@@ -250,7 +250,19 @@ For example:
 Currently supported tokens: FLR, WFLR, USDC, USDT, WETH, SFLR
 """
 
-price_quote: Final = """
+FOLLOW_UP_TOKEN_SEND: Final = """
+I need a bit more information to process your transfer request. Please specify:
+
+1. The destination address (starting with 0x)
+2. The amount of FLR you want to send
+
+For example:
+- "Send 10 FLR to 0x123abc..."
+- "Transfer 5 FLR to 0xdef456..."
+"""
+
+# Define both uppercase and lowercase versions to ensure compatibility
+PRICE_QUOTE: Final = """
 Extract EXACTLY two pieces of information from the input for a token price quote:
 
 1. SOURCE TOKEN (from_token)
@@ -290,3 +302,6 @@ Examples:
 ✗ "What's the price of FLR?" → FAIL (missing to_token)
 ✗ "What's the exchange rate for FLR to FLR?" → FAIL (same token)
 """
+
+# Alias the uppercase version to lowercase for compatibility
+price_quote = PRICE_QUOTE

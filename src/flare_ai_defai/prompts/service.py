@@ -107,7 +107,11 @@ class PromptService:
         """
         try:
             prompt = self.library.get_prompt(prompt_name)
+            self.logger.debug("prompt_retrieved", name=prompt_name)
             formatted = prompt.format(**kwargs)
+        except KeyError:
+            self.logger.error("prompt_not_found", name=prompt_name)
+            raise
         except Exception as e:
             self.logger.exception(
                 "prompt_formatting_failed", prompt_name=prompt_name, error=str(e)

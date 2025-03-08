@@ -34,6 +34,9 @@ from flare_ai_defai.prompts.templates import (
     TOKEN_SEND,
     TOKEN_SWAP,
     TX_CONFIRMATION,
+    FOLLOW_UP_TOKEN_SWAP,
+    FOLLOW_UP_TOKEN_SEND,
+    price_quote,
 )
 
 logger = structlog.get_logger(__name__)
@@ -82,6 +85,9 @@ class PromptLibrary:
         - conversational: For general user interactions
         - request_attestation: For remote attestation requests
         - tx_confirmation: For transaction confirmation
+        - price_quote: For token price quotes
+        - follow_up_token_swap: For follow-up token swap requests
+        - follow_up_token_send: For follow-up token send requests
 
         This method is called automatically during instance initialization.
         """
@@ -148,6 +154,33 @@ class PromptLibrary:
                 response_schema=None,
                 response_mime_type=None,
                 category="account",
+            ),
+            Prompt(
+                name="price_quote",
+                description="Extract token price quote parameters from user input",
+                template=price_quote,
+                required_inputs=["user_input"],
+                response_schema=None,
+                response_mime_type="application/json",
+                category="defai",
+            ),
+            Prompt(
+                name="follow_up_token_swap",
+                description="Follow-up prompt for incomplete token swap requests",
+                template=FOLLOW_UP_TOKEN_SWAP,
+                required_inputs=None,
+                response_schema=None,
+                response_mime_type=None,
+                category="defai",
+            ),
+            Prompt(
+                name="follow_up_token_send",
+                description="Follow-up prompt for incomplete token send requests",
+                template=FOLLOW_UP_TOKEN_SEND,
+                required_inputs=None,
+                response_schema=None,
+                response_mime_type=None,
+                category="defai",
             ),
         ]
 

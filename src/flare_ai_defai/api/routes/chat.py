@@ -262,9 +262,13 @@ class ChatRouter:
             len(send_token_json) != expected_json_len
             or send_token_json.get("amount") == 0.0
         ):
-            prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_send")
-            follow_up_response = self.ai.generate(prompt)
-            return {"response": follow_up_response.text}
+            try:
+                prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_send")
+                follow_up_response = self.ai.generate(prompt)
+                return {"response": follow_up_response.text}
+            except KeyError:
+                # Fallback if prompt is missing
+                return {"response": "I need more information to process your transfer. Please specify the destination address and the amount of FLR you want to send."}
 
         tx = self.blockchain.create_send_flr_tx(
             to_address=send_token_json.get("to_address"),
@@ -303,9 +307,13 @@ class ChatRouter:
         
         # Validate the swap parameters
         if not all(key in swap_json for key in ["from_token", "to_token", "amount"]):
-            prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_swap")
-            follow_up_response = self.ai.generate(prompt)
-            return {"response": follow_up_response.text}
+            try:
+                prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_swap")
+                follow_up_response = self.ai.generate(prompt=prompt)
+                return {"response": follow_up_response.text}
+            except KeyError:
+                # Fallback if prompt is missing
+                return {"response": "I need more information to process your swap. Please specify the token you want to swap from, the token you want to swap to, and the amount."}
         
         from_token = swap_json["from_token"]
         to_token = swap_json["to_token"]
@@ -434,14 +442,15 @@ class ChatRouter:
             swap_json = json.loads(swap_response.text)
             
             # Validate the swap parameters
-            if not all(key in swap_json for key in ["from_token", "to_token", "amount"]):
+            if not all(key in swap_json for key in ["from_token", "to_token"]):
                 prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_swap")
                 follow_up_response = self.ai.generate(prompt=prompt)
                 return {"response": follow_up_response.text}
             
             from_token = swap_json["from_token"]
             to_token = swap_json["to_token"]
-            amount = swap_json["amount"]
+            # Use a default amount of 1.0 for price quotes
+            amount = 1.0
             
             # Initialize SparkDEX provider
             sparkdex = SparkDEXProvider(self.blockchain.w3)

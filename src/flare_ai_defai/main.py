@@ -28,6 +28,32 @@ from flare_ai_defai.settings import settings
 logger = structlog.get_logger(__name__)
 
 
+def validate_required_prompts(prompt_service):
+    """Validate that all required prompts are registered in the library."""
+    required_prompts = [
+        "semantic_router", 
+        "token_send", 
+        "token_swap", 
+        "generate_account",
+        "conversational",
+        "request_attestation",
+        "tx_confirmation",
+        "price_quote",
+        "follow_up_token_swap",
+        "follow_up_token_send"
+    ]
+    
+    missing_prompts = []
+    for prompt_name in required_prompts:
+        try:
+            prompt_service.library.get_prompt(prompt_name)
+        except KeyError:
+            missing_prompts.append(prompt_name)
+    
+    if missing_prompts:
+        logger.warning(f"Missing required prompts: {', '.join(missing_prompts)}")
+
+
 def create_app() -> FastAPI:
     """
     Create and configure the FastAPI application instance.
@@ -67,12 +93,18 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Initialize prompt service
+    prompts = PromptService()
+    
+    # Validate required prompts
+    validate_required_prompts(prompts)
+    
     # Initialize router with service providers
     chat = ChatRouter(
         ai=GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model),
         blockchain=FlareProvider(web3_provider_url=settings.web3_provider_url),
         attestation=Vtpm(simulate=settings.simulate_attestation),
-        prompts=PromptService(),
+        prompts=prompts,
     )
 
     # Register chat routes with API
