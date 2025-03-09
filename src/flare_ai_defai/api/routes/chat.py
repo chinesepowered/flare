@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from web3 import Web3
 from web3.exceptions import Web3RPCError
 
-from flare_ai_defai.ai import GeminiProvider, EmbeddingTaskType, GeminiEmbedding
+from flare_ai_defai.ai import GeminiProvider, EmbeddingTaskType
 from flare_ai_defai.attestation import Vtpm, VtpmAttestationError
 from flare_ai_defai.blockchain import FlareProvider, BlazeDEXProvider
 from flare_ai_defai.blockchain.blazedex import TOKEN_ADDRESSES
