@@ -432,7 +432,7 @@ class BlazeDEXProvider:
                         "from": from_address,
                         "value": amount_wei,
                         "gas": 200000,
-                        "gasPrice": self.w3.eth.gas_price,
+                        "gasPrice": self.w3.eth.gas_price * 5,
                         "nonce": self.w3.eth.get_transaction_count(from_address),
                     }
                 )
@@ -444,7 +444,7 @@ class BlazeDEXProvider:
                     {
                         "from": from_address,
                         "gas": 200000,
-                        "gasPrice": self.w3.eth.gas_price,
+                        "gasPrice": self.w3.eth.gas_price * 5,
                         "nonce": self.w3.eth.get_transaction_count(from_address),
                     }
                 )
@@ -456,7 +456,7 @@ class BlazeDEXProvider:
                     {
                         "from": from_address,
                         "gas": 200000,
-                        "gasPrice": self.w3.eth.gas_price,
+                        "gasPrice": self.w3.eth.gas_price * 5,
                         "nonce": self.w3.eth.get_transaction_count(from_address),
                     }
                 )
