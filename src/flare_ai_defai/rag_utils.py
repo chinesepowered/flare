@@ -2,7 +2,9 @@ import os
 import json
 from typing import List, Tuple
 from qdrant_client import QdrantClient, models
-from sentence_transformers import SentenceTransformer
+from flare_ai_defai.ai import GeminiEmbedding, EmbeddingTaskType
+from flare_ai_defai.settings import settings
+import hashlib
 
 def load_data(file_path: str) -> List[dict]:
     """
@@ -12,57 +14,63 @@ def load_data(file_path: str) -> List[dict]:
         data = json.load(f)
     return data
 
-def create_chunks(data: List[dict], chunk_size: int = 200, chunk_overlap: int = 30) -> List[Tuple[str, dict]]:
+def create_chunks(data: List[dict], chunk_size: int = 512) -> List[str]:
     """
-    Creates chunks from the loaded data.
+    Splits the data into smaller chunks.
     """
     chunks = []
     for item in data:
         text = item['text']
-        metadata = item['metadata']
-        
-        # Split text into chunks
-        text_chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size - chunk_overlap)]
-        
-        for chunk in text_chunks:
-            chunks.append((chunk, metadata))
+        for i in range(0, len(text), chunk_size):
+            chunks.append(text[i:i + chunk_size])
     return chunks
 
-def embed_chunks(chunks: List[Tuple[str, dict]], model_name: str = 'all-mpnet-base-v2') -> List[Tuple[List[float], str, dict]]:
+def embed_chunks(chunks: List[str]) -> List[Tuple[str, List[float]]]:
     """
-    Embeds the created chunks using SentenceTransformer.
+    Embeds the chunks using Gemini Embedding.
     """
-    model = SentenceTransformer(model_name)
-    embeddings = model.encode([chunk[0] for chunk in chunks])
+    # Initialize Gemini Embedding with the API key from settings
+    embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
     
     embedded_chunks = []
-    for embedding, chunk in zip(embeddings, chunks):
-        embedded_chunks.append((embedding.tolist(), chunk[0], chunk[1]))
+    for chunk in chunks:
+        # Embed the chunk using Gemini Embedding
+        embedding = embedding_client.embed_content(
+            embedding_model="models/embedding-001",
+            contents=chunk,
+            task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT
+        )
+        embedded_chunks.append((chunk, embedding))
     return embedded_chunks
 
-def upload_to_qdrant(client: QdrantClient, collection_name: str, embedded_chunks: List[Tuple[List[float], str, dict]]):
+def upload_to_qdrant(
+    client: QdrantClient, collection_name: str, embedded_chunks: List[Tuple[str, List[float]]]
+) -> None:
     """
     Uploads the embedded chunks to Qdrant.
     """
     points = []
-    for i, (embedding, chunk, metadata) in enumerate(embedded_chunks):
-        payload = {
-            "text": chunk,
-            **metadata
-        }
-        point = models.PointStruct(
-            id=i,
-            vector=embedding,
-            payload=payload
+    for i, (chunk, embedding) in enumerate(embedded_chunks):
+        # Generate a unique ID for each point
+        point_id = hashlib.sha256(chunk.encode()).hexdigest()
+        points.append(
+            models.PointStruct(
+                id=point_id,
+                vector=embedding,
+                payload={"text": chunk},
+            )
         )
-        points.append(point)
     
-    client.upsert(
+    client.upsert(collection_name=collection_name, points=points, wait=True)
+
+def create_collection(client: QdrantClient, collection_name: str) -> None:
+    """
+    Creates a collection in Qdrant.
+    """
+    client.recreate_collection(
         collection_name=collection_name,
-        wait=True,
-        points=points
+        vectors_config=models.VectorParams(size=1536, distance=models.Distance.COSINE),
     )
-    print(f"Uploaded {len(points)} chunks to Qdrant collection '{collection_name}'.")
 
 if __name__ == "__main__":
     # Example Usage

@@ -11,6 +11,7 @@ Environment variables take precedence over values defined in the .env file.
 
 import structlog
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
 
 logger = structlog.get_logger(__name__)
 
@@ -42,6 +43,7 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost"
     qdrant_port: int = 6333
     qdrant_api_key: str = ""  # Leave this empty for local development without authentication
+    flare_private_key: str
 
     model_config = SettingsConfigDict(
         # This enables .env file support

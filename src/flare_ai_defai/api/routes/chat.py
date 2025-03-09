@@ -91,6 +91,18 @@ class ChatRouter:
         self.qdrant_client = initialize_qdrant_client()
         self.collection_name = "flare_knowledge"  # You can configure this in settings
         self.embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
+
+        # Load account from private key during initialization
+        try:
+            # Replace with your private key or retrieve it from a secure source
+            private_key = settings.flare_private_key
+            account = self.blockchain.w3.eth.account.from_key(private_key)
+            self.blockchain.address = account.address
+            self.blockchain.private_key = private_key
+            self.logger.info("Account loaded during initialization", address=self.blockchain.address)
+        except Exception as e:
+            self.logger.error("Account loading failed during initialization", error=str(e))
+
         self._setup_routes()
 
     def _setup_routes(self) -> None:

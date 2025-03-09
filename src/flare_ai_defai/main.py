@@ -22,6 +22,7 @@ from flare_ai_defai import (
     GeminiProvider,
     PromptService,
     Vtpm,
+    BlazeDEXProvider,
 )
 from flare_ai_defai.settings import settings
 
@@ -99,12 +100,16 @@ def create_app() -> FastAPI:
     # Validate required prompts
     validate_required_prompts(prompts)
     
+    # Initialize BlazeDEX provider
+    blazedex = BlazeDEXProvider(w3=FlareProvider(web3_provider_url=settings.web3_provider_url).w3)
+    
     # Initialize router with service providers
     chat = ChatRouter(
         ai=GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model),
         blockchain=FlareProvider(web3_provider_url=settings.web3_provider_url),
         attestation=Vtpm(simulate=settings.simulate_attestation),
         prompts=prompts,
+        blazedex=blazedex,
     )
 
     # Register chat routes with API

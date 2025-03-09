@@ -48,93 +48,86 @@ Ready to start exploring the Flare network?"
 """
 
 TOKEN_SEND: Final = """
-Extract EXACTLY two pieces of information from the input text for a token send operation:
+You are a JSON parser extracting token transfer information.
 
-1. DESTINATION ADDRESS
-   Required format:
-   • Must start with "0x"
-   • Exactly 42 characters long
-   • Hexadecimal characters only (0-9, a-f, A-F)
-   • Extract COMPLETE address only
-   • DO NOT modify or truncate
-   • FAIL if no valid address found
-
-2. TOKEN AMOUNT
-   Number extraction rules:
-   • Convert written numbers to digits (e.g., "five" → 5)
-   • Handle decimals and integers
-   • Convert ALL integers to float (e.g., 100 → 100.0)
-   • Recognize common amount formats:
-     - Decimal: "1.5", "0.5"
-     - Integer: "1", "100"
-     - With words: "5 tokens", "10 FLR"
-   • Extract first valid number only
-   • FAIL if no valid amount found
+Your task is to extract TWO pieces of information from the following input and return them in a valid JSON format:
 
 Input: ${user_input}
 
-Rules:
-- Both fields MUST be present
-- Amount MUST be positive
-- Amount MUST be float type
-- DO NOT infer missing values
-- DO NOT modify the address
-- FAIL if either value is missing or invalid
+1. Extract the DESTINATION ADDRESS:
+   - Must start with "0x"
+   - Must be exactly 42 characters long (including "0x")
+   - Contains only hexadecimal characters (0-9, a-f, A-F)
+   - Do not modify the address in any way
+
+2. Extract the TOKEN AMOUNT:
+   - Must be a positive number
+   - Convert any spelled-out numbers to digits (e.g., "five" → 5.0)
+   - Return as a float value even if it's a whole number (e.g., "1" → 1.0)
+   - Look for amounts in various formats:
+     * Simple numbers: "1", "5.5"
+     * With token symbol: "1 FLR", "5.5 tokens"
+     * In verb phrases: "transfer 1 FLR", "send 5.5 tokens"
+
+Return a valid JSON object with exactly these two fields:
+{
+  "to_address": "the extracted address",
+  "amount": the extracted amount as a float
+}
+
+IMPORTANT:
+- Both fields MUST be present in your JSON
+- The "amount" field MUST be a float (not a string)
+- Return ONLY this JSON object, nothing else
+
+Examples:
+For input: "transfer 1 FLR to 0x257B2457b10C02d393458393515F51dc8880300d"
+Return: {"to_address": "0x257B2457b10C02d393458393515F51dc8880300d", "amount": 1.0}
+
+For input: "send 5.5 FLR to address 0x1234567890123456789012345678901234567890"
+Return: {"to_address": "0x1234567890123456789012345678901234567890", "amount": 5.5}
 """
 
 # Token swap prompt for extracting swap parameters from user input
 TOKEN_SWAP = """
 You are a blockchain assistant helping users swap tokens on a decentralized exchange.
 
-The user has sent the following message:
-${user_input}
+Your task is to extract the following information from the user's message and return it in JSON format:
 
-Extract the following information from the message:
-1. The token the user wants to swap from (from_token)
-2. The token the user wants to swap to (to_token)
-3. The amount of the from_token to swap.  If the amount is not explicitly specified, assume it is 0.01
+1.  The token to swap FROM (from_token)
+2.  The token to swap TO (to_token)
+3.  The amount to swap (amount)
 
-Respond with a JSON object containing the following fields:
-- from_token: The token symbol the user wants to swap from (e.g., "FLR", "WFLR", "USDT")
-- to_token: The token symbol the user wants to swap to (e.g., "FLR", "WFLR", "USDT")
-- amount: The amount of from_token to swap as a float
+Input: ${user_input}
 
-If any information is missing or unclear, use your best judgment to infer it.
-If you absolutely cannot determine a value, set it to null.
+Respond with a JSON object containing:
+- from_token: The token symbol to swap from (e.g., "FLR", "WFLR", "USDT")
+- to_token: The token symbol to swap to (e.g., "FLR", "WFLR", "USDT")
+- amount: The amount to swap as a float. If the amount is not specified, assume it is 0.01.
+
+If a token is not clearly specified, return null for that token.
 
 Available tokens: FLR (native token), WFLR, BNZ, BUNNY, eUSDT, eETH, FINU, FLX, GEMIN, GFLR, JOULE, PFL, PHIL, POODLE, sFLR, USDC.e, USDT, USDX
 
 Example responses:
 ```json
-{
-  "from_token": "FLR",
-  "to_token": "USDT",
-  "amount": 10.5
-}
+{ "from_token": "FLR", "to_token": "USDT", "amount": 10.5 }
 ```
 
 ```json
-{
-  "from_token": "WFLR",
-  "to_token": "eETH",
-  "amount": 2.0
-}
+{ "from_token": "WFLR", "to_token": "eETH", "amount": 2.0 }
 ```
 
 ```json
-{
-  "from_token": "BNZ",
-  "to_token": "USDC.e",
-  "amount": 100.0
-}
+{ "from_token": "BNZ", "to_token": "USDC.e", "amount": 100.0 }
 ```
 
 ```json
-{
-  "from_token": "FLR",
-  "to_token": "USDT",
-  "amount": 1.0
-}
+{ "from_token": "FLR", "to_token": "USDT", "amount": 1.0 }
+```
+
+```json
+{ "from_token": "FLR", "to_token": null, "amount": 0.01 }
 ```
 """
 
