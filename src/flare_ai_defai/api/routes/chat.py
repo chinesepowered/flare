@@ -550,6 +550,7 @@ class ChatRouter:
         # Use RAG to enhance the conversation
         context = self.get_relevant_context(message)
         augmented_message = f"Context: {context}\nUser message: {message}"
+        self.logger.info(augmented_message)
         response = self.ai.send_message(augmented_message)
         return {"response": response.text}
 
