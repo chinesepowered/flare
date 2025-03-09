@@ -305,6 +305,42 @@ class ChatRouter:
         if await self.is_sanctioned_address(to_address):
             return {"response": "I cannot process this transaction as the recipient address is sanctioned."}
 
+        # If swapping from FLR, we need to approve WFLR
+        from_token_for_approval = "WFLR"
+        if message.startswith("FLR"):
+            from_token_for_approval = "FLR"
+
+        # Check if approval is needed
+        token_address = self.blazedex.get_token_address(from_token_for_approval)
+        token_contract = self.blazedex.get_token_contract(token_address)
+        
+        # Get token decimals
+        decimals = token_contract.functions.decimals().call()
+        amount_in_token_units = int(amount * (10 ** decimals))
+        
+        # Check current allowance
+        allowance = token_contract.functions.allowance(
+            self.blockchain.address, 
+            self.blazedex.router_contract.address
+        ).call()
+        
+        if allowance < amount_in_token_units:
+            # Create approval transaction
+            approval_tx = self.blazedex.approve_token(
+                from_token_for_approval, amount, self.blockchain.address
+            )
+            
+            # Add approval transaction to queue
+            self.blockchain.add_tx_to_queue(
+                msg=f"Approve {from_token_for_approval} for swap", tx=approval_tx
+            )
+            
+            approval_preview = (
+                f"Transaction Preview (1/2): Approve {amount} {from_token_for_approval} "
+                f"for trading on BlazeDEX\nType CONFIRM to proceed."
+            )
+            return {"response": approval_preview}
+
         tx = self.blockchain.create_send_flr_tx(
             to_address=to_address,
             amount=amount,
@@ -314,7 +350,7 @@ class ChatRouter:
         formatted_preview = (
             "Transaction Preview: "
             + f"Sending {Web3.from_wei(tx.get('value', 0), 'ether')} "
-            + f"FLR to {tx.get('to')}\nType CONFIRM to proceed."
+            + f"{from_token_for_approval} to {tx.get('to')}\nType CONFIRM to proceed."
         )
         return {"response": formatted_preview}
 
@@ -371,7 +407,11 @@ class ChatRouter:
             # If swapping a token other than FLR, we need to approve it first
             if from_token != "FLR":
                 # Check if approval is needed
-                token_address = self.blazedex.get_token_address(from_token)
+                from_token_for_approval = from_token
+                if from_token == "FLR":
+                    from_token_for_approval = "WFLR"
+                
+                token_address = self.blazedex.get_token_address(from_token_for_approval)
                 token_contract = self.blazedex.get_token_contract(token_address)
                 
                 # Get token decimals
@@ -387,16 +427,16 @@ class ChatRouter:
                 if allowance < amount_in_token_units:
                     # Create approval transaction
                     approval_tx = self.blazedex.approve_token(
-                        from_token, amount, self.blockchain.address
+                        from_token_for_approval, amount, self.blockchain.address
                     )
                     
                     # Add approval transaction to queue
                     self.blockchain.add_tx_to_queue(
-                        msg=f"Approve {from_token} for swap", tx=approval_tx
+                        msg=f"Approve {from_token_for_approval} for swap", tx=approval_tx
                     )
                     
                     approval_preview = (
-                        f"Transaction Preview (1/2): Approve {amount} {from_token} "
+                        f"Transaction Preview (1/2): Approve {amount} {from_token_for_approval} "
                         f"for trading on BlazeDEX\nType CONFIRM to proceed."
                     )
                     return {"response": approval_preview}
