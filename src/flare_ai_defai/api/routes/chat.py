@@ -238,6 +238,7 @@ class ChatRouter:
             SemanticRouterResponse.REQUEST_ATTESTATION: self.handle_attestation,
             SemanticRouterResponse.CHECK_LIQUIDITY: self.handle_check_liquidity,
             SemanticRouterResponse.CONVERSATION: self.handle_conversation,
+            SemanticRouterResponse.CHECK_SANCTIONS: self.handle_check_sanctions,
         }
         
         handler = handlers.get(route)
@@ -548,10 +549,10 @@ class ChatRouter:
             dict[str, str]: Response from AI provider
         """
         # Use RAG to enhance the conversation
-        context = self.get_relevant_context(message)
-        augmented_message = f"Context: {context}\nUser message: {message}"
-        self.logger.info(augmented_message)
-        response = self.ai.send_message(augmented_message)
+        # context = self.get_relevant_context(message)
+        # augmented_message = f"Context: {context}\nUser message: {message}"
+        # self.logger.info(augmented_message)
+        response = self.ai.send_message(message)
         return {"response": response.text}
 
     async def handle_price_quote(self, message: str) -> dict[str, str]:
@@ -780,3 +781,62 @@ class ChatRouter:
         )
         context = "\n".join([hit.payload['text'] for hit in search_result])
         return context
+
+    async def handle_check_sanctions(self, message: str) -> dict[str, str]:
+        """
+        Handle sanctions check requests.
+
+        Args:
+            message: Message containing sanctions check request
+
+        Returns:
+            dict[str, str]: Response containing sanctions check result
+        """
+        # Extract the address from the message
+        address = None
+        # Use a regex to find a potential address
+        address_match = re.search(r'(0x[a-fA-F0-9]{40})', message)
+        if address_match:
+            address = address_match.group(1)
+
+        if not address:
+            return {"response": "Could not identify a valid address in your message."}
+
+        # Determine which method to use based on the query context
+        if "qdrant" in message.lower():
+            # Use Qdrant for sanctions check
+            is_sanctioned, matches = await self.check_sanctions_qdrant(address)
+            if is_sanctioned:
+                return {"response": f"The address {address} is sanctioned (Qdrant check). Similar sanctioned addresses: {matches}"}
+            else:
+                return {"response": f"The address {address} is not sanctioned (Qdrant check)."}
+        else:
+            # Use text file lookup for sanctions check
+            is_sanctioned = await self.is_sanctioned_address(address)
+            if is_sanctioned:
+                return {"response": f"The address {address} is sanctioned (Text file check)."}
+            else:
+                return {"response": f"The address {address} is not sanctioned (Text file check)."}
+
+    async def check_sanctions_qdrant(self, address: str, collection_name: str = "flare_knowledge", threshold: float = 0.95) -> tuple[bool, list[dict]]:
+        """
+        Check if an address is sanctioned using Qdrant.
+
+        Args:
+            address: The address to check
+            collection_name: Name of the Qdrant collection
+            threshold: Similarity threshold for matching
+
+        Returns:
+            tuple[bool, list[dict]]: True if the address is sanctioned, False otherwise
+        """
+        query_vector = self.ai.embed_content(
+            contents=address,
+        )
+        search_results = self.qdrant_client.search(
+            collection_name=collection_name,
+            query_vector=query_vector,
+            limit=10  # Adjust the limit as needed
+        )
+        matches = [hit.payload['text'] for hit in search_results]
+        return (len(matches) > 0, matches)

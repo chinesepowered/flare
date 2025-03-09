@@ -33,6 +33,7 @@ class SemanticRouterResponse(str, Enum):
         CHECK_LIQUIDITY: Route for liquidity pool status checks
         REQUEST_ATTESTATION: Route for attestation requests
         CONVERSATION: Default route for general conversation
+        CHECK_SANCTIONS: Route for checking if an address is sanctioned
     """
 
     GENERATE_ACCOUNT = "GENERATE_ACCOUNT"
@@ -42,6 +43,7 @@ class SemanticRouterResponse(str, Enum):
     CHECK_LIQUIDITY = "CHECK_LIQUIDITY"
     REQUEST_ATTESTATION = "REQUEST_ATTESTATION"
     CONVERSATION = "CONVERSATION"
+    CHECK_SANCTIONS = "CHECK_SANCTIONS"
 
 
 class TokenSendResponse(TypedDict):

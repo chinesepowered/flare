@@ -14,6 +14,7 @@ Based on the message, categorize it into ONE of the following categories:
 - CHECK_LIQUIDITY: User wants to check the liquidity pool status for a token pair (e.g., "check liquidity for FLR/USDT", "what's the liquidity like for ETH and USDC")
 - REQUEST_ATTESTATION: User wants to request an attestation
 - CONVERSATION: General conversation or questions not fitting other categories
+- CHECK_SANCTIONS: User wants to check if an address is sanctioned (e.g., "is 0x... sanctioned?", "check if 0x... is on the sanctions list")
 
 Respond with ONLY the category name, nothing else.
 """
