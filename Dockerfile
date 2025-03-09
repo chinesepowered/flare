@@ -44,6 +44,9 @@ CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 # Add this line after copying the source code
 RUN pip install qdrant-client numpy
+# Update google-generativeai, clear cache first
+RUN pip cache purge
+RUN pip install -U google-generativeai
 
 # Add this line to copy the qdrant config
 COPY qdrant_config.yaml /app/qdrant_config.yaml

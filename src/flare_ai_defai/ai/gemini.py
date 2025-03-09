@@ -87,9 +87,9 @@ class GeminiProvider(BaseAIProvider):
             **kwargs (str): Additional configuration parameters including:
                 - system_instruction: Custom system prompt for the AI personality
         """
-        genai.configure(api_key=api_key)  # pyright: ignore [reportPrivateImportUsage]
-        self.chat: genai.ChatSession | None = None  # pyright: ignore [reportPrivateImportUsage]
-        self.model = genai.GenerativeModel(  # pyright: ignore [reportPrivateImportUsage]
+        genai.configure(api_key=api_key)
+        self.chat: genai.ChatSession | None = None
+        self.model = genai.GenerativeModel(
             model_name=model,
             system_instruction=kwargs.get("system_instruction", SYSTEM_INSTRUCTION),
         )
@@ -136,7 +136,7 @@ class GeminiProvider(BaseAIProvider):
         """
         response = self.model.generate_content(
             prompt,
-            generation_config=genai.GenerationConfig(  # pyright: ignore [reportPrivateImportUsage]
+            generation_config=genai.GenerationConfig(
                 response_mime_type=response_mime_type, response_schema=response_schema
             ),
         )

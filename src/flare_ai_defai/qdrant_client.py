@@ -19,6 +19,7 @@ def initialize_qdrant_client():
         
         # Create default collections
         create_collection(client, "semantic_cache")
+        create_collection(client, "flare_knowledge")  # Create flare_knowledge collection
         return client
     except Exception as e:
         print(f"Failed to create in-memory Qdrant instance: {e}")
@@ -32,6 +33,10 @@ def initialize_qdrant_client():
                 prefer_grpc=False,
             )
             print(f"Connected to Qdrant at {settings.qdrant_url}:{settings.qdrant_port}")
+            
+            # Create default collections
+            create_collection(client, "semantic_cache")
+            create_collection(client, "flare_knowledge")  # Create flare_knowledge collection
             return client
         except Exception as e:
             print(f"Failed to connect to Qdrant: {e}")
@@ -41,23 +46,17 @@ def initialize_qdrant_client():
 
 def create_collection(client: QdrantClient, collection_name: str):
     """
-    Creates a collection in Qdrant if it doesn't exist.
+    Creates a Qdrant collection if it does not exist.
     """
     try:
-        collections = client.get_collections().collections
-        collection_names = [collection.name for collection in collections]
-        
-        if collection_name in collection_names:
-            print(f"Collection '{collection_name}' already exists.")
-        else:
-            print(f"Creating collection '{collection_name}'...")
-            client.create_collection(
-                collection_name=collection_name,
-                vectors_config=models.VectorParams(size=1536, distance=models.Distance.COSINE),
-            )
-            print(f"Collection '{collection_name}' created successfully.")
+        client.get_collection(collection_name=collection_name)
+        print(f"Collection '{collection_name}' already exists.")
     except Exception as e:
-        print(f"Error working with collection '{collection_name}': {e}")
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(size=768, distance=models.Distance.COSINE),
+        )
+        print(f"Collection '{collection_name}' created successfully.")
 
 class DummyQdrantClient:
     """
