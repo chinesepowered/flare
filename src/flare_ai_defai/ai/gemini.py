@@ -183,24 +183,6 @@ class GeminiProvider(BaseAIProvider):
             },
         )
 
-
-class GeminiEmbedding:
-    """
-    Provider class for Google's Gemini Embedding service.
-    
-    This class provides methods to generate embeddings using Google's Gemini models.
-    """
-    
-    def __init__(self, api_key: str) -> None:
-        """
-        Initialize the Gemini Embedding provider with API credentials.
-        
-        Args:
-            api_key (str): Google API key for authentication
-        """
-        genai.configure(api_key=api_key)  # pyright: ignore [reportPrivateImportUsage]
-        self.logger = logger.bind(service="gemini_embedding")
-    
     def embed_content(
         self, 
         embedding_model: str, 

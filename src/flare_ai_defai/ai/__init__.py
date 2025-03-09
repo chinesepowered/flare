@@ -6,7 +6,7 @@ from .base import (
     ModelResponse,
     AsyncBaseRouter,
 )
-from .gemini import GeminiProvider, EmbeddingTaskType, GeminiEmbedding
+from .gemini import GeminiProvider, EmbeddingTaskType
 from .openrouter import AsyncOpenRouterProvider, OpenRouterProvider
 
 __all__ = [
@@ -20,5 +20,4 @@ __all__ = [
     "ModelResponse",
     "OpenRouterProvider",
     "EmbeddingTaskType",
-    "GeminiEmbedding",
 ]

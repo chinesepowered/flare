@@ -30,17 +30,17 @@ def embed_chunks(chunks: List[str]) -> List[Tuple[str, List[float]]]:
     Embeds the chunks using Gemini Embedding.
     """
     # Initialize Gemini Embedding with the API key from settings
-    embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
+    # embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
     
     embedded_chunks = []
     for chunk in chunks:
         # Embed the chunk using Gemini Embedding
-        embedding = embedding_client.embed_content(
-            embedding_model="models/embedding-001",
-            contents=chunk,
-            task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT
-        )
-        embedded_chunks.append((chunk, embedding))
+        # embedding = embedding_client.embed_content(
+        #     embedding_model="models/embedding-001",
+        #     contents=chunk,
+        #     task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT
+        # )
+        embedded_chunks.append((chunk, []))
     return embedded_chunks
 
 def upload_to_qdrant(

@@ -79,7 +79,8 @@ Return a valid JSON object with exactly these two fields:
 IMPORTANT:
 - Both fields MUST be present in your JSON
 - The "amount" field MUST be a float (not a string)
-- Return ONLY this JSON object, nothing else
+- Return ONLY a valid JSON object, nothing else. Do not include any additional text, newlines, or comments.
+- Ensure the JSON object includes the closing curly brace `}`.
 
 Examples:
 For input: "transfer 1 FLR to 0x257B2457b10C02d393458393515F51dc8880300d"
