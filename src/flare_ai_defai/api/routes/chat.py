@@ -602,22 +602,20 @@ class ChatRouter:
             with open("src/flare_ai_defai/sanctioned_addresses_ETH.txt", "r") as f:
                 addresses = [line.strip() for line in f]
 
-            # Embed the addresses using Gemini Provider
-            embedded_addresses = []
-            for address in addresses:
-                embedding = self.ai.embed_content(
-                    contents=address,
-                )
-                embedded_addresses.append((address, embedding))
+            # Chunk the addresses
+            chunks = addresses  # Simplest chunking: one address per chunk
+
+            # Embed the chunks using Gemini Provider
+            embedded_chunks = embed_chunks(chunks)
 
             # Prepare points for Qdrant
             points = []
-            for i, (address, embedding) in enumerate(embedded_addresses):
+            for i, (chunk, embedding) in enumerate(embedded_chunks):
                 points.append(
                     models.PointStruct(
                         id=i,
                         vector=embedding,
-                        payload={"text": address}
+                        payload={"text": chunk}
                     )
                 )
 

@@ -5,6 +5,7 @@ from qdrant_client import QdrantClient, models
 from flare_ai_defai.ai import GeminiEmbedding, EmbeddingTaskType
 from flare_ai_defai.settings import settings
 import hashlib
+from flare_ai_defai.ai.gemini import GeminiProvider
 
 def load_data(file_path: str) -> List[dict]:
     """
@@ -31,16 +32,17 @@ def embed_chunks(chunks: List[str]) -> List[Tuple[str, List[float]]]:
     """
     # Initialize Gemini Embedding with the API key from settings
     # embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
+    embedding_client = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
     
     embedded_chunks = []
     for chunk in chunks:
         # Embed the chunk using Gemini Embedding
-        # embedding = embedding_client.embed_content(
-        #     embedding_model="models/embedding-001",
-        #     contents=chunk,
-        #     task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT
-        # )
-        embedded_chunks.append((chunk, []))
+        embedding = embedding_client.embed_content(
+            contents=chunk,
+            embedding_model="models/embedding-001",
+            task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT
+        )
+        embedded_chunks.append((chunk, embedding))
     return embedded_chunks
 
 def upload_to_qdrant(

@@ -184,51 +184,26 @@ class GeminiProvider(BaseAIProvider):
         )
 
     def embed_content(
-        self, 
-        embedding_model: str, 
-        contents: str, 
-        task_type: EmbeddingTaskType
+        self,
+        contents: str,
+        embedding_model: str = "models/embedding-001",
+        task_type: EmbeddingTaskType = EmbeddingTaskType.RETRIEVAL_DOCUMENT,
     ) -> list[float]:
         """
         Generate embeddings for the given content using Google's Gemini embedding models.
-        
+
         Args:
-            embedding_model (str): The embedding model to use (e.g., "models/embedding-001")
             contents (str): The content to embed
+            embedding_model (str): The embedding model to use (e.g., "models/embedding-001")
             task_type (EmbeddingTaskType): The type of embedding task
-            
+
         Returns:
             list[float]: The embedding vector
         """
         try:
-            # Create the embedding model
-            model = genai.GenerativeModel(embedding_model)
-            
-            # Set the task type
-            embedding_config = {
-                "task_type": task_type,
-            }
-            
-            # Generate the embedding
-            result = model.embed_content(
-                contents,
-                **embedding_config
-            )
-            
-            # Extract the embedding values
-            embedding = result.embedding
-            
-            self.logger.debug(
-                "embed_content", 
-                model=embedding_model, 
-                task_type=task_type, 
-                content_length=len(contents),
-                embedding_dimension=len(embedding)
-            )
-            
-            return embedding
+            model = genai.GenerativeModel(model_name=embedding_model)
+            response = model.embed(content=contents, task_type=task_type)
+            return response.embedding.values
         except Exception as e:
             self.logger.error("embed_content_failed", error=str(e))
-            # Return a zero vector as a fallback
-            # Using 1536 as the dimension, which is common for embedding models
-            return [0.0] * 1536
+            return []
