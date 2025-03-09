@@ -62,12 +62,13 @@ Input: ${user_input}
 
 2. Extract the TOKEN AMOUNT:
    - Must be a positive number
-   - Convert any spelled-out numbers to digits (e.g., "five" → 5.0)
-   - Return as a float value even if it's a whole number (e.g., "1" → 1.0)
+   - Convert any spelled-out numbers to digits (e.g., "five" -> 5.0)
+   - Return as a float value even if it's a whole number (e.g., "1" -> 1.0)
    - Look for amounts in various formats:
      * Simple numbers: "1", "5.5"
-     * With token symbol: "1 FLR", "5.5 tokens"
-     * In verb phrases: "transfer 1 FLR", "send 5.5 tokens"
+     * With token symbol: "1 FLR", "5.5 tokens", "0.1 flr"
+     * In verb phrases: "transfer 1 FLR", "send 5.5 tokens", "send 0.1 flr"
+   - If the amount appears before the token symbol, extract it correctly (e.g., "0.1 FLR")
 
 Return a valid JSON object with exactly these two fields:
 {
@@ -86,6 +87,16 @@ Return: {"to_address": "0x257B2457b10C02d393458393515F51dc8880300d", "amount": 1
 
 For input: "send 5.5 FLR to address 0x1234567890123456789012345678901234567890"
 Return: {"to_address": "0x1234567890123456789012345678901234567890", "amount": 5.5}
+
+For input: "send 0.1 flr to 0x257B2457b10C02d393458393515F51dc8880300d"
+Return: {"to_address": "0x257B2457b10C02d393458393515F51dc8880300d", "amount": 0.1}
+
+Negative Examples:
+For input: "What is the balance of 0x257B2457b10C02d393458393515F51dc8880300d"
+Do NOT return: {"to_address": "0x257B2457b10C02d393458393515F51dc8880300d", "amount": null} # This is not a transfer request
+
+For input: "I don't want to send any tokens"
+Do NOT return: {"to_address": null, "amount": 0.0} # There is no valid transfer request here
 """
 
 # Token swap prompt for extracting swap parameters from user input
