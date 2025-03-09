@@ -1,0 +1,10 @@
+# Example Qdrant configuration
+storage_config:
+  storage_path: /app/qdrant_data
+  wal_capacity_mb: 32
+
+service_config:
+  http_port: 6333
+  grpc_port: 6334
+
+telemetry_enabled: false 
