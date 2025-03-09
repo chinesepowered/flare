@@ -104,6 +104,7 @@ class ChatRouter:
             self.logger.error("Account loading failed during initialization", error=str(e))
 
         self._setup_routes()
+        self.load_sanctioned_addresses_into_qdrant()
 
     def _setup_routes(self) -> None:
         """
@@ -571,21 +572,74 @@ class ChatRouter:
 
     def load_sanctioned_addresses(self) -> set[str]:
         """
-        Loads sanctioned addresses from the specified file.
+        Load sanctioned addresses from a text file.
 
         Returns:
-            set[str]: A set of sanctioned addresses.
+            set[str]: A set of sanctioned addresses in lowercase
         """
         try:
             with open("src/flare_ai_defai/sanctioned_addresses_ETH.txt", "r") as f:
-                addresses = {line.strip().lower() for line in f if line.strip()}
+                addresses = {line.strip().lower() for line in f}
+            self.logger.info(
+                "Sanctioned addresses loaded", count=len(addresses)
+            )  # Log the number of addresses loaded
             return addresses
         except FileNotFoundError:
-            self.logger.error("Sanctioned addresses file not found.")
+            self.logger.warning("Sanctioned addresses file not found")
             return set()
         except Exception as e:
-            self.logger.error("Error loading sanctioned addresses:", error=str(e))
+            self.logger.error(
+                "Failed to load sanctioned addresses", error=str(e)
+            )  # Log any exceptions
             return set()
+
+    def load_sanctioned_addresses_into_qdrant(self) -> None:
+        """
+        Load sanctioned addresses into Qdrant for RAG.
+        """
+        try:
+            # Read sanctioned addresses from the file
+            with open("src/flare_ai_defai/sanctioned_addresses_ETH.txt", "r") as f:
+                addresses = [line.strip() for line in f]
+
+            # Embed the addresses using Gemini Embedding
+            embedded_addresses = []
+            for address in addresses:
+                embedding = self.embedding_client.embed_content(
+                    embedding_model="models/embedding-001",
+                    contents=address,
+                    task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT
+                )
+                embedded_addresses.append((address, embedding))
+
+            # Prepare points for Qdrant
+            points = []
+            for i, (address, embedding) in enumerate(embedded_addresses):
+                points.append(
+                    models.PointStruct(
+                        id=i,
+                        vector=embedding,
+                        payload={"text": address}
+                    )
+                )
+
+            # Upload points to Qdrant
+            self.qdrant_client.upsert(
+                collection_name=self.collection_name,
+                points=points,
+                wait=True  # Wait until points are indexed
+            )
+
+            self.logger.info(
+                "Sanctioned addresses loaded into Qdrant", count=len(addresses)
+            )
+
+        except FileNotFoundError:
+            self.logger.warning("Sanctioned addresses file not found")
+        except Exception as e:
+            self.logger.error(
+                "Failed to load sanctioned addresses into Qdrant", error=str(e)
+            )
 
     async def is_sanctioned_address(self, address: str) -> bool:
         """
