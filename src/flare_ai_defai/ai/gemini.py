@@ -202,13 +202,136 @@ class GeminiProvider(BaseAIProvider):
             list[float]: The embedding vector
         """
         try:
-            # Use the embedding model directly from the genai module
-            embedding_model = genai.get_embedding_model(model_name=embedding_model)
-            response = embedding_model.embed_content(
-                content=contents, 
-                task_type=task_type
+            # Create a new embedding model instance
+            model = genai.GenerativeModel(model_name=embedding_model)
+            
+            # Generate embeddings using the embed_content method
+            response = model.embed_content(
+                content=contents,
+                task_type=task_type.value
             )
+            
             return response.embedding
         except Exception as e:
             self.logger.error("embed_content_failed", error=str(e))
             return []
+
+    def check_sanctions_qdrant(self, address: str, qdrant_client: Any, collection_name: str = "sanctions", threshold: float = 0.95) -> tuple[bool, list[dict]]:
+        """
+        Check if an address is in the sanctions list using Qdrant vector similarity search.
+        
+        Args:
+            address (str): The blockchain address to check
+            qdrant_client: The Qdrant client instance
+            collection_name (str): The name of the Qdrant collection containing sanctioned addresses
+            threshold (float): The similarity threshold for considering an address as sanctioned
+            
+        Returns:
+            tuple[bool, list[dict]]: A tuple containing:
+                - Boolean indicating if the address is sanctioned
+                - List of similar sanctioned addresses with their similarity scores
+        """
+        try:
+            # Generate embedding for the address
+            address_embedding = self.embed_content(address)
+            
+            if not address_embedding:
+                self.logger.error("sanctions_check_failed", error="Failed to generate embedding for address")
+                return False, []
+                
+            # Search for similar addresses in the sanctions collection
+            search_results = qdrant_client.search(
+                collection_name=collection_name,
+                query_vector=address_embedding,
+                limit=5  # Return top 5 matches
+            )
+            
+            # Check if any results exceed the similarity threshold
+            matches = []
+            is_sanctioned = False
+            
+            for result in search_results:
+                similarity = result.score
+                if similarity >= threshold:
+                    is_sanctioned = True
+                
+                matches.append({
+                    "address": result.payload.get("address", "Unknown"),
+                    "similarity": similarity,
+                    "reason": result.payload.get("reason", "Unknown")
+                })
+                
+            return is_sanctioned, matches
+            
+        except Exception as e:
+            self.logger.error("sanctions_check_failed", error=str(e))
+            return False, []
+            
+    def check_sanctions_text(self, address: str, sanctions_file_path: str = "sanctioned_addresses_ETH.txt") -> tuple[bool, list[dict]]:
+        """
+        Check if an address is in the sanctions list using in-memory text comparison.
+        
+        Args:
+            address (str): The blockchain address to check
+            sanctions_file_path (str): Path to the text file containing sanctioned addresses
+            
+        Returns:
+            tuple[bool, list[dict]]: A tuple containing:
+                - Boolean indicating if the address is sanctioned
+                - List containing the matched address if found
+        """
+        try:
+            # Normalize the input address (lowercase, remove whitespace)
+            normalized_address = address.lower().strip()
+            
+            # Load the sanctions list from file
+            sanctioned_addresses = []
+            try:
+                with open(sanctions_file_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:  # Skip empty lines
+                            continue
+                            
+                        parts = line.split(',')
+                        addr = parts[0].lower().strip()
+                        reason = parts[1] if len(parts) > 1 else "Sanctioned address"
+                        sanctioned_addresses.append({"address": addr, "reason": reason})
+            except FileNotFoundError:
+                self.logger.error("sanctions_file_not_found", path=sanctions_file_path)
+                return False, []
+                
+            # Check if the address is in the sanctions list
+            for sanctioned in sanctioned_addresses:
+                if normalized_address == sanctioned["address"]:
+                    return True, [{"address": sanctioned["address"], "similarity": 1.0, "reason": sanctioned["reason"]}]
+                    
+            return False, []
+            
+        except Exception as e:
+            self.logger.error("sanctions_check_failed", error=str(e))
+            return False, []
+            
+    def check_sanctions(self, address: str, query_context: str = "", qdrant_client: Any = None, **kwargs: Any) -> tuple[bool, list[dict]]:
+        """
+        Check if an address is in the sanctions list using the appropriate method based on context.
+        
+        Args:
+            address (str): The blockchain address to check
+            query_context (str): The context of the user's query to determine which method to use
+            qdrant_client: The Qdrant client instance (required for Qdrant-based checks)
+            **kwargs: Additional arguments to pass to the specific check method
+            
+        Returns:
+            tuple[bool, list[dict]]: A tuple containing:
+                - Boolean indicating if the address is sanctioned
+                - List of matched addresses with their details
+        """
+        # Determine which method to use based on the query context
+        if "qdrant" in query_context.lower() and qdrant_client:
+            self.logger.info("using_qdrant_sanctions_check", address=address)
+            return self.check_sanctions_qdrant(address, qdrant_client, **kwargs)
+        else:
+            self.logger.info("using_text_sanctions_check", address=address)
+            sanctions_file_path = kwargs.get("sanctions_file_path", "sanctioned_addresses_ETH.txt")
+            return self.check_sanctions_text(address, sanctions_file_path)
