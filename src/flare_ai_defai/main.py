@@ -23,6 +23,7 @@ from flare_ai_defai import (
     PromptService,
     Vtpm,
     BlazeDEXProvider,
+    initialize_qdrant_client,
 )
 from flare_ai_defai.settings import settings
 
@@ -110,6 +111,7 @@ def create_app() -> FastAPI:
         attestation=Vtpm(simulate=settings.simulate_attestation),
         prompts=prompts,
         blazedex=blazedex,
+        qdrant_client=initialize_qdrant_client(),
     )
 
     # Register chat routes with API

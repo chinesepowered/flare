@@ -72,6 +72,7 @@ class ChatRouter:
         attestation: Vtpm,
         prompts: PromptService,
         blazedex: BlazeDEXProvider,
+        qdrant_client: initialize_qdrant_client,
     ) -> None:
         """
         Initialize the ChatRouter with required service providers.
@@ -88,10 +89,10 @@ class ChatRouter:
         self.attestation = attestation
         self.prompts = prompts
         self.blazedex = blazedex
+        self.qdrant_client = qdrant_client
         self.logger = logger.bind(router="chat")
         self.sanctioned_addresses = self.load_sanctioned_addresses()
         # Initialize Qdrant client and Sentence Transformer model
-        self.qdrant_client = initialize_qdrant_client()
         self.collection_name = "flare_knowledge"  # You can configure this in settings
         # self.embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
 

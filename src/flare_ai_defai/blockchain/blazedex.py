@@ -45,6 +45,8 @@ TOKEN_ADDRESSES = {
 
 logger = structlog.get_logger(__name__)
 
+DEFAULT_SLIPPAGE = 25.0  # Default slippage tolerance in percentage
+
 
 class BlazeDEXProvider:
     """
@@ -266,6 +268,10 @@ class BlazeDEXProvider:
                     amount_wei, path
                 ).call()
 
+                self.logger.debug(
+                    "getAmountsOut_result", amounts_out=amounts_out
+                )
+
                 # Convert output amount from wei
                 output_amount = amounts_out[1] / (10**to_decimals)
 
@@ -319,7 +325,7 @@ class BlazeDEXProvider:
         to_token: str,
         amount: float,
         from_address: ChecksumAddress,
-        slippage: float = 0.5,
+        slippage: float = DEFAULT_SLIPPAGE,
     ) -> TxParams:
         """
         Create a transaction to swap tokens.
@@ -329,7 +335,7 @@ class BlazeDEXProvider:
             to_token (str): The token symbol to swap to
             amount (float): The amount to swap in human-readable format
             from_address (ChecksumAddress): The address initiating the swap
-            slippage (float, optional): The slippage tolerance in percentage. Defaults to 0.5.
+            slippage (float, optional): The slippage tolerance in percentage. Defaults to 5.0.
 
         Returns:
             TxParams: The transaction parameters
@@ -378,8 +384,19 @@ class BlazeDEXProvider:
                     amount_wei, path
                 ).call()
 
+                self.logger.debug(
+                    "getAmountsOut_result", amounts_out=amounts_out
+                )
+
                 # Apply slippage to the output amount
                 min_output_amount = int(amounts_out[1] * (1 - slippage / 100))
+
+                self.logger.debug(
+                    "min_output_amount_calculated",
+                    min_output_amount=min_output_amount,
+                    amounts_out_1=amounts_out[1],
+                    slippage=slippage,
+                )
             except Exception as e:
                 self.logger.warning(
                     "getAmountsOut_failed_using_estimate",
