@@ -90,7 +90,7 @@ class ChatRouter:
         # Initialize Qdrant client and Sentence Transformer model
         self.qdrant_client = initialize_qdrant_client()
         self.collection_name = "flare_knowledge"  # You can configure this in settings
-        self.embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
+        # self.embedding_client = GeminiEmbedding(api_key=settings.gemini_api_key)
 
         # Load account from private key during initialization
         try:
@@ -602,13 +602,11 @@ class ChatRouter:
             with open("src/flare_ai_defai/sanctioned_addresses_ETH.txt", "r") as f:
                 addresses = [line.strip() for line in f]
 
-            # Embed the addresses using Gemini Embedding
+            # Embed the addresses using Gemini Provider
             embedded_addresses = []
             for address in addresses:
-                embedding = self.embedding_client.embed_content(
-                    embedding_model="models/embedding-001",
+                embedding = self.ai.embed_content(
                     contents=address,
-                    task_type=EmbeddingTaskType.RETRIEVAL_DOCUMENT
                 )
                 embedded_addresses.append((address, embedding))
 
@@ -664,10 +662,8 @@ class ChatRouter:
         Returns:
             str: Concatenated text from the retrieved documents.
         """
-        query_vector = self.embedding_client.embed_content(
-            embedding_model="models/embedding-001",
+        query_vector = self.ai.embed_content(
             contents=query,
-            task_type=EmbeddingTaskType.RETRIEVAL_QUERY,
         )
         search_result = self.qdrant_client.search(
             collection_name=self.collection_name,

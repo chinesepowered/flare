@@ -9,6 +9,7 @@ def initialize_qdrant_client():
         url=settings.qdrant_url,
         port=settings.qdrant_port,
         api_key=settings.qdrant_api_key,
+        https=True,  # Use HTTPS for secure connection
     )
     return client
 

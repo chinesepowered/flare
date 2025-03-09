@@ -97,6 +97,8 @@ Do NOT return: {"to_address": "0x257B2457b10C02d393458393515F51dc8880300d", "amo
 
 For input: "I don't want to send any tokens"
 Do NOT return: {"to_address": null, "amount": 0.0} # There is no valid transfer request here
+
+Respond with ONLY this JSON object, nothing else.
 """
 
 # Token swap prompt for extracting swap parameters from user input
