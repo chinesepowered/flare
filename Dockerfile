@@ -18,13 +18,6 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 RUN apt-get update && apt-get install -y nginx supervisor curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Qdrant
-RUN apt-get update && apt-get install -y wget && \
-    wget https://github.com/qdrant/qdrant/releases/download/v1.7.3/qdrant-v1.7.3-linux-x86_64.tar.gz && \
-    tar -xvf qdrant-v1.7.3-linux-x86_64.tar.gz && \
-    mv qdrant /usr/local/bin/ && \
-    rm qdrant-v1.7.3-linux-x86_64.tar.gz
-
 WORKDIR /app
 COPY --from=backend-builder /flare-ai-defai/.venv ./.venv
 COPY --from=backend-builder /flare-ai-defai/src ./src
