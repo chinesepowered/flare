@@ -4,6 +4,20 @@
 
 Freedom Flare is an innovative marketplace that empowers users with unprecedented control over their AI interactions while ensuring security through Trusted Execution Environments (TEEs). This platform represents a significant advancement in the democratization of AI resources and data utilization.
 
+## 🎯 Tracks
+
+### 💰 DeFAI (Decentralized AI)
+
+🔥 Integrated with BlazeSwap
+
+🔥 Integrated with SparkDex (abandoned after testnet issues)
+
+### 📚 RAG (Retrieval-Augmented Generation)
+
+🗄️ Integrated with Qdrant
+
+📜 Integrated with US Sanctions List data
+
 ## Real-World Example: The LinkedIn Challenge 🔍
 
 Companies want access to LinkedIn data, but are frequently restricted by LinkedIn's limited querying capabilities and API constraints. LinkedIn, understandably, doesn't want to give away all their intellectual property and valuable data assets. This creates a fundamental tension: companies need deeper insights, while data owners need protection.
