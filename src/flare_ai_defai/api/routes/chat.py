@@ -101,10 +101,13 @@ class ChatRouter:
         try:
             # Replace with your private key or retrieve it from a secure source
             private_key = settings.flare_private_key
-            account = self.blockchain.w3.eth.account.from_key(private_key)
-            self.blockchain.address = account.address
-            self.blockchain.private_key = private_key
-            self.logger.info("Account loaded during initialization", address=self.blockchain.address)
+            if private_key:
+                account = self.blockchain.w3.eth.account.from_key(private_key)
+                self.blockchain.address = account.address
+                self.blockchain.private_key = private_key
+                self.logger.info("Account loaded during initialization", address=self.blockchain.address)
+            else:
+                self.logger.warning("flare_private_key is not set in settings.")
         except Exception as e:
             self.logger.error("Account loading failed during initialization", error=str(e))
 
