@@ -12,3 +12,4 @@ wheels/
 .ruff_cache
 .vscode
 .DS_Store
+src/flare_ai_defai/blockchain/test.py

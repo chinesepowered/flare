@@ -77,7 +77,7 @@ class BlazeDEXProvider:
 
         # Get WFLR address from router or use default if call fails
         try:
-            self.wflr_address = self.router_contract.functions.WETH().call()
+            self.wflr_address = self.router_contract.functions.wNat().call()
             self.logger.debug("wflr_address_from_router", address=self.wflr_address)
         except Exception as e:
             # Use the known WFLR address from TOKEN_ADDRESSES as fallback
@@ -214,6 +214,11 @@ class BlazeDEXProvider:
         from_token = from_token.upper()
         to_token = to_token.upper()
 
+        print("INPUTS!!!!!!!!!!!!!!!!!!!")
+        print(from_token)
+        print(to_token)
+        print(amount)
+        print("INPUTS!!!!!!!!!!!!!!!!!!!")
         try:
             # Get token addresses
             from_address = self.get_token_address(from_token)
@@ -236,6 +241,12 @@ class BlazeDEXProvider:
                 if to_address != TOKEN_ADDRESSES["FLR"]
                 else None
             )
+            print("DEBUG!!!!!!!!!!!!!!!!!!!")
+            print([from_address, to_address])
+            print(from_contract)
+            print(to_contract)
+            print()
+            print("DEBUG!!!!!!!!!!!!!!!!!!!")
 
             # Get token decimals
             from_decimals = (

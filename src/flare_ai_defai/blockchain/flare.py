@@ -166,6 +166,11 @@ class FlareProvider:
         Raises:
             ValueError: If account does not exist
         """
+        print("INPUTS!!!!!!!!!!!!!!!!!!!")
+        print(to_address)
+        print(amount)
+        print("INPUTS!!!!!!!!!!!!!!!!!!!")
+
         if not self.address:
             msg = "Account does not exist"
             raise ValueError(msg)

@@ -6,7 +6,8 @@ with Google's Generative AI service. It handles chat sessions, content generatio
 and message management while maintaining a consistent AI personality.
 """
 
-from typing import Any, override
+from typing import Any
+from typing_extensions import override  # Import override from typing_extensions
 from enum import Enum
 
 import google.generativeai as genai

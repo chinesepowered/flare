@@ -126,7 +126,7 @@ ROUTER_ABI = [
     },
     {
         "inputs": [],
-        "name": "WETH",
+        "name": "wNat",
         "outputs": [{"internalType": "address", "name": "", "type": "address"}],
         "stateMutability": "view",
         "type": "function",
