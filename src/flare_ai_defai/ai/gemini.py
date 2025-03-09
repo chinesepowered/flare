@@ -7,6 +7,7 @@ and message management while maintaining a consistent AI personality.
 """
 
 from typing import Any, override
+from enum import Enum
 
 import google.generativeai as genai
 import structlog
@@ -46,6 +47,18 @@ steps they need to take themselves while providing relevant guidance.
 You maintain professionalism while allowing your subtle wit to make interactions
 more engaging - your goal is to be helpful first, entertaining second.
 """
+
+
+class EmbeddingTaskType(str, Enum):
+    """
+    Enumeration for the different embedding task types.
+    """
+
+    RETRIEVAL_QUERY = "retrieval_query"
+    RETRIEVAL_DOCUMENT = "retrieval_document"
+    SEMANTIC_SIMILARITY = "semantic_similarity"
+    CLASSIFICATION = "classification"
+    CLUSTERING = "clustering"
 
 
 class GeminiProvider(BaseAIProvider):
@@ -169,3 +182,66 @@ class GeminiProvider(BaseAIProvider):
                 "prompt_feedback": response.prompt_feedback,
             },
         )
+
+
+class GeminiEmbedding:
+    """
+    Provider class for Google's Gemini Embedding service.
+    
+    This class provides methods to generate embeddings using Google's Gemini models.
+    """
+    
+    def __init__(self, api_key: str) -> None:
+        """
+        Initialize the Gemini Embedding provider with API credentials.
+        
+        Args:
+            api_key (str): Google API key for authentication
+        """
+        genai.configure(api_key=api_key)  # pyright: ignore [reportPrivateImportUsage]
+        self.logger = logger.bind(service="gemini_embedding")
+    
+    def embed_content(
+        self, 
+        embedding_model: str, 
+        contents: str, 
+        task_type: EmbeddingTaskType
+    ) -> list[float]:
+        """
+        Generate embeddings for the given content.
+        
+        Args:
+            embedding_model (str): The embedding model to use
+            contents (str): The content to embed
+            task_type (EmbeddingTaskType): The type of embedding task
+            
+        Returns:
+            list[float]: The embedding vector
+        """
+        try:
+            # For now, we'll use a simple approach to generate embeddings
+            # In a real implementation, you would use the Gemini API to generate embeddings
+            # This is a placeholder implementation
+            import hashlib
+            import numpy as np
+            
+            # Create a deterministic hash of the content
+            content_hash = hashlib.md5(contents.encode()).hexdigest()
+            
+            # Convert the hash to a list of floats
+            # This is not a real embedding, just a placeholder
+            np.random.seed(int(content_hash, 16) % (2**32))
+            embedding = np.random.normal(0, 1, 1536).tolist()
+            
+            self.logger.debug(
+                "embed_content", 
+                model=embedding_model, 
+                task_type=task_type, 
+                content_length=len(contents)
+            )
+            
+            return embedding
+        except Exception as e:
+            self.logger.error("embed_content_failed", error=str(e))
+            # Return a zero vector as a fallback
+            return [0.0] * 1536

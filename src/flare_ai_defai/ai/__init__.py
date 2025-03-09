@@ -4,11 +4,13 @@ from .base import (
     CompletionRequest,
     GenerationConfig,
     ModelResponse,
+    AsyncBaseRouter,
 )
-from .gemini import GeminiProvider
+from .gemini import GeminiProvider, EmbeddingTaskType, GeminiEmbedding
 from .openrouter import AsyncOpenRouterProvider, OpenRouterProvider
 
 __all__ = [
+    "AsyncBaseRouter",
     "AsyncOpenRouterProvider",
     "BaseAIProvider",
     "ChatRequest",
@@ -17,4 +19,6 @@ __all__ = [
     "GenerationConfig",
     "ModelResponse",
     "OpenRouterProvider",
+    "EmbeddingTaskType",
+    "GeminiEmbedding",
 ]
