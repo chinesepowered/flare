@@ -109,8 +109,8 @@ const ChatInterface = () => {
       <div className="flex flex-col h-full max-w-4xl mx-auto w-full shadow-lg bg-white">
         {/* Header */}
         <div className="bg-pink-600 text-white p-4">
-          <h1 className="text-xl font-bold">Artemis</h1>
-          <p className="text-sm opacity-80">DeFAI Copilot for Flare (gemini-2.0-flash)</p>
+          <h1 className="text-xl font-bold">Freedom Flare</h1>
+          <p className="text-sm opacity-80">DeFAI Copilot for Freedom Flare (gemini-2.0-flash with private data RAG)</p>
         </div>
 
         {/* Messages container */}
