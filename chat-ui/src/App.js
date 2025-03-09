@@ -2,6 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import './index.css';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+} from "react-router-dom";
+import Marketplace from './Marketplace';
 
 const BACKEND_ROUTE = 'api/routes/chat/'
 
@@ -188,4 +195,21 @@ const ChatInterface = () => {
   );
 };
 
-export default ChatInterface;
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<ChatInterface />} />
+        <Route path="/market" element={<Marketplace />} />
+      </Routes>
+
+      {/* Navigation Links */}
+      <div className="bg-gray-300 p-4 flex justify-around">
+        <Link to="/" className="text-pink-600 hover:underline">Chat</Link>
+        <Link to="/market" className="text-pink-600 hover:underline">Marketplace</Link>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
