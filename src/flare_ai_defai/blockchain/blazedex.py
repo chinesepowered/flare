@@ -299,6 +299,7 @@ class BlazeDEXProvider:
                 input_amount=amount,
                 error=str(e),
             )
+            raise e
             raise ValueError(f"Failed to get swap quote: {str(e)}")
 
     def create_swap_tx(

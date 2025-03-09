@@ -201,9 +201,13 @@ class GeminiProvider(BaseAIProvider):
             list[float]: The embedding vector
         """
         try:
-            model = genai.GenerativeModel(model_name=embedding_model)
-            response = model.embed(content=contents, task_type=task_type)
-            return response.embedding.values
+            # Use the embedding model directly from the genai module
+            embedding_model = genai.get_embedding_model(model_name=embedding_model)
+            response = embedding_model.embed_content(
+                content=contents, 
+                task_type=task_type
+            )
+            return response.embedding
         except Exception as e:
             self.logger.error("embed_content_failed", error=str(e))
             return []

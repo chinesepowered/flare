@@ -1,13 +1,11 @@
 import os
 import json
-from typing import List, Tuple
 from qdrant_client import QdrantClient, models
-from flare_ai_defai.ai import GeminiEmbedding, EmbeddingTaskType
+from flare_ai_defai.ai import GeminiProvider, EmbeddingTaskType
 from flare_ai_defai.settings import settings
 import hashlib
-from flare_ai_defai.ai.gemini import GeminiProvider
 
-def load_data(file_path: str) -> List[dict]:
+def load_data(file_path: str) -> list[dict]:
     """
     Loads data from a JSON file.
     """
@@ -15,7 +13,7 @@ def load_data(file_path: str) -> List[dict]:
         data = json.load(f)
     return data
 
-def create_chunks(data: List[dict], chunk_size: int = 512) -> List[str]:
+def create_chunks(data: list[dict], chunk_size: int = 512) -> list[str]:
     """
     Splits the data into smaller chunks.
     """
@@ -26,7 +24,7 @@ def create_chunks(data: List[dict], chunk_size: int = 512) -> List[str]:
             chunks.append(text[i:i + chunk_size])
     return chunks
 
-def embed_chunks(chunks: List[str]) -> List[Tuple[str, List[float]]]:
+def embed_chunks(chunks: list[str]) -> list[tuple[str, list[float]]]:
     """
     Embeds the chunks using Gemini Embedding.
     """
@@ -46,7 +44,7 @@ def embed_chunks(chunks: List[str]) -> List[Tuple[str, List[float]]]:
     return embedded_chunks
 
 def upload_to_qdrant(
-    client: QdrantClient, collection_name: str, embedded_chunks: List[Tuple[str, List[float]]]
+    client: QdrantClient, collection_name: str, embedded_chunks: list[tuple[str, list[float]]]
 ) -> None:
     """
     Uploads the embedded chunks to Qdrant.

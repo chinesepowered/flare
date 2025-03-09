@@ -12,6 +12,7 @@ The module provides a ChatRouter class that integrates various services:
 """
 
 import json
+import re
 
 import structlog
 from fastapi import APIRouter, HTTPException
@@ -344,6 +345,14 @@ class ChatRouter:
         to_token = swap_json.get("to_token")
         amount = swap_json.get("amount")
 
+        # If amount is not provided in the JSON response, try to extract it from the message
+        if from_token and to_token and not amount:
+            # Try to extract the amount from the message using a simple regex
+            amount_match = re.search(r'(\d+(\.\d+)?)\s+' + re.escape(from_token), message, re.IGNORECASE)
+            if amount_match:
+                amount = float(amount_match.group(1))
+                self.logger.debug("extracted_amount_from_message", amount=amount)
+
         if not all([from_token, to_token, amount]):
             try:
                 prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_swap")
@@ -483,8 +492,13 @@ class ChatRouter:
             
             from_token = swap_json["from_token"]
             to_token = swap_json["to_token"]
-            # Use a default amount of 1.0 for price quotes
-            amount = 1.0
+            
+            # Try to extract the amount from the message if specified
+            amount = 1.0  # Default amount for price quotes
+            amount_match = re.search(r'(\d+(\.\d+)?)\s+' + re.escape(from_token), message, re.IGNORECASE)
+            if amount_match:
+                amount = float(amount_match.group(1))
+                self.logger.debug("extracted_amount_from_message_for_price_quote", amount=amount)
             
             # Get a quote for the swap
             expected_output, price_impact = self.blazedex.get_swap_quote(
