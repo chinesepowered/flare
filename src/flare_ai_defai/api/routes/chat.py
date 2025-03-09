@@ -26,6 +26,11 @@ from flare_ai_defai.blockchain.blazedex import TOKEN_ADDRESSES
 from flare_ai_defai.prompts import PromptService, SemanticRouterResponse
 from flare_ai_defai.settings import settings
 
+# New imports for Qdrant and RAG
+from flare_ai_defai.qdrant_client import initialize_qdrant_client
+from flare_ai_defai.rag_utils import embed_chunks
+from sentence_transformers import SentenceTransformer
+
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
@@ -64,6 +69,7 @@ class ChatRouter:
         blockchain: FlareProvider,
         attestation: Vtpm,
         prompts: PromptService,
+        blazedex: BlazeDEXProvider,
     ) -> None:
         """
         Initialize the ChatRouter with required service providers.
@@ -79,8 +85,13 @@ class ChatRouter:
         self.blockchain = blockchain
         self.attestation = attestation
         self.prompts = prompts
-        self.blazedex = BlazeDEXProvider(self.blockchain.w3)
+        self.blazedex = blazedex
         self.logger = logger.bind(router="chat")
+        self.sanctioned_addresses = self.load_sanctioned_addresses()
+        # Initialize Qdrant client and Sentence Transformer model
+        self.qdrant_client = initialize_qdrant_client()
+        self.model = SentenceTransformer('all-mpnet-base-v2')
+        self.collection_name = "flare_knowledge"  # You can configure this in settings
         self._setup_routes()
 
     def _setup_routes(self) -> None:
@@ -421,7 +432,10 @@ class ChatRouter:
         Returns:
             dict[str, str]: Response from AI provider
         """
-        response = self.ai.send_message(message)
+        # Use RAG to enhance the conversation
+        context = self.get_relevant_context(message)
+        augmented_message = f"Context: {context}\nUser message: {message}"
+        response = self.ai.send_message(augmented_message)
         return {"response": response.text}
 
     async def handle_price_quote(self, message: str) -> dict[str, str]:
@@ -544,6 +558,24 @@ class ChatRouter:
                 f"Please make sure you're using valid token symbols."
             }
 
+    def load_sanctioned_addresses(self) -> set[str]:
+        """
+        Loads sanctioned addresses from the specified file.
+
+        Returns:
+            set[str]: A set of sanctioned addresses.
+        """
+        try:
+            with open("src/flare_ai_defai/sanctioned_addresses_ETH.txt", "r") as f:
+                addresses = {line.strip().lower() for line in f if line.strip()}
+            return addresses
+        except FileNotFoundError:
+            self.logger.error("Sanctioned addresses file not found.")
+            return set()
+        except Exception as e:
+            self.logger.error("Error loading sanctioned addresses:", error=str(e))
+            return set()
+
     async def is_sanctioned_address(self, address: str) -> bool:
         """
         Check if an address is sanctioned.
@@ -554,6 +586,24 @@ class ChatRouter:
         Returns:
             bool: True if the address is sanctioned, False otherwise
         """
-        # Implement the logic to check if an address is sanctioned
-        # This is a placeholder and should be replaced with the actual implementation
-        return False
+        return address.lower() in self.sanctioned_addresses
+
+    def get_relevant_context(self, query: str, top_k: int = 3) -> str:
+        """
+        Retrieves relevant context from Qdrant based on the query.
+
+        Args:
+            query: The user's query.
+            top_k: Number of results to retrieve.
+
+        Returns:
+            str: Concatenated text from the retrieved documents.
+        """
+        query_embedding = self.model.encode(query).tolist()
+        search_result = self.qdrant_client.search(
+            collection_name=self.collection_name,
+            query_vector=query_embedding,
+            limit=top_k
+        )
+        context = "\n".join([hit.payload['text'] for hit in search_result])
+        return context

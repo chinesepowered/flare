@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     web3_provider_url: str = "https://flare-api.flare.network/ext/C/rpc"
     web3_explorer_url: str = "https://flare-explorer.flare.network/"
 
+    qdrant_url: str = "http://localhost"
+    qdrant_port: int = 6333
+    qdrant_api_key: str = ""  # Leave this empty for local development without authentication
+
     model_config = SettingsConfigDict(
         # This enables .env file support
         env_file=".env",
