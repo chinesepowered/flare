@@ -20,6 +20,8 @@ dependencies = [
     "fastapi>=0.115.8",
     "uvicorn>=0.34.0",
     "web3>=7.8.0",
+    "qdrant-client>=1.7.0",
+    "numpy>=1.26.0",
 ]
 
 [dependency-groups]

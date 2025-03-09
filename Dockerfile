@@ -41,3 +41,6 @@ EXPOSE 80
 
 # Start supervisor (which will start both nginx and the backend)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
+# Add this line after copying the source code
+RUN pip install qdrant-client numpy

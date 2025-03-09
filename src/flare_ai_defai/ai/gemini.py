@@ -208,10 +208,10 @@ class GeminiEmbedding:
         task_type: EmbeddingTaskType
     ) -> list[float]:
         """
-        Generate embeddings for the given content.
+        Generate embeddings for the given content using Google's Gemini embedding models.
         
         Args:
-            embedding_model (str): The embedding model to use
+            embedding_model (str): The embedding model to use (e.g., "models/embedding-001")
             contents (str): The content to embed
             task_type (EmbeddingTaskType): The type of embedding task
             
@@ -219,29 +219,34 @@ class GeminiEmbedding:
             list[float]: The embedding vector
         """
         try:
-            # For now, we'll use a simple approach to generate embeddings
-            # In a real implementation, you would use the Gemini API to generate embeddings
-            # This is a placeholder implementation
-            import hashlib
-            import numpy as np
+            # Create the embedding model
+            model = genai.GenerativeModel(embedding_model)
             
-            # Create a deterministic hash of the content
-            content_hash = hashlib.md5(contents.encode()).hexdigest()
+            # Set the task type
+            embedding_config = {
+                "task_type": task_type,
+            }
             
-            # Convert the hash to a list of floats
-            # This is not a real embedding, just a placeholder
-            np.random.seed(int(content_hash, 16) % (2**32))
-            embedding = np.random.normal(0, 1, 1536).tolist()
+            # Generate the embedding
+            result = model.embed_content(
+                contents,
+                **embedding_config
+            )
+            
+            # Extract the embedding values
+            embedding = result.embedding
             
             self.logger.debug(
                 "embed_content", 
                 model=embedding_model, 
                 task_type=task_type, 
-                content_length=len(contents)
+                content_length=len(contents),
+                embedding_dimension=len(embedding)
             )
             
             return embedding
         except Exception as e:
             self.logger.error("embed_content_failed", error=str(e))
             # Return a zero vector as a fallback
+            # Using 1536 as the dimension, which is common for embedding models
             return [0.0] * 1536
