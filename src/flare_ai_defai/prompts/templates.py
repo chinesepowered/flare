@@ -1,53 +1,21 @@
 from typing import Final
 
 SEMANTIC_ROUTER: Final = """
-Classify the user's message into one of the following categories:
+You are a semantic router for a blockchain assistant. Your job is to categorize user messages into predefined categories.
 
-1. GENERATE_ACCOUNT: User wants to create a new wallet or account
-   Examples:
-   - "Create a wallet for me"
-   - "I need a new account"
-   - "Generate a wallet"
+The user has sent the following message:
+${user_input}
 
-2. SEND_TOKEN: User wants to send tokens to an address
-   Examples:
-   - "Send 5 FLR to 0x123..."
-   - "Transfer 10 tokens to this address"
-   - "I want to send some FLR"
+Based on the message, categorize it into ONE of the following categories:
+- GENERATE_ACCOUNT: User wants to create a new wallet or account
+- SEND_TOKEN: User wants to send tokens to another address
+- TOKEN_SWAP: User wants to swap one token for another (e.g., "swap 10 FLR for USDT", "exchange my ETH for BTC")
+- PRICE_QUOTE: User wants to know the exchange rate or price between tokens (e.g., "what's the rate for FLR to USDT", "how much is 1 ETH in USDC")
+- CHECK_LIQUIDITY: User wants to check the liquidity pool status for a token pair (e.g., "check liquidity for FLR/USDT", "what's the liquidity like for ETH and USDC")
+- REQUEST_ATTESTATION: User wants to request an attestation
+- CONVERSATION: General conversation or questions not fitting other categories
 
-3. TOKEN_SWAP: User wants to swap one token for another
-   Examples:
-   - "Swap 10 FLR for USDT"
-   - "Exchange my FLR for eUSDT"
-   - "Trade 5 WFLR to sFLR"
-   - "Convert 100 FLR to USDC.e"
-   - "do the swap: 1 FLR to USDC.e"
-   - "swap 1 FLR to whatever in sFLR"
-   - "swap 5 eETH to WFLR"
-   - "trade 10 JOULE for BNZ"
-
-4. PRICE_QUOTE: User wants to check the price or rate for a token swap
-   Examples:
-   - "What's the price of FLR in USDT?"
-   - "How much eETH can I get for 10 FLR?"
-   - "Check the rate between FLR and eUSDT"
-   - "What's the exchange rate for FLR to USDC.e?"
-
-5. REQUEST_ATTESTATION: User is asking about remote attestation
-   Examples:
-   - "Show me your attestation"
-   - "Prove your identity"
-   - "Can I see your remote attestation?"
-
-6. CONVERSATION: General conversation or questions
-   Examples:
-   - "What can you do?"
-   - "Tell me about Flare Network"
-   - "How does this work?"
-
-Input: ${user_input}
-
-Output EXACTLY one of: GENERATE_ACCOUNT, SEND_TOKEN, TOKEN_SWAP, PRICE_QUOTE, REQUEST_ATTESTATION, CONVERSATION
+Respond with ONLY the category name, nothing else.
 """
 
 GENERATE_ACCOUNT: Final = """
@@ -114,64 +82,34 @@ Rules:
 - FAIL if either value is missing or invalid
 """
 
-TOKEN_SWAP: Final = """
-Extract EXACTLY three pieces of information from the input for a token swap operation:
+# Token swap prompt for extracting swap parameters from user input
+TOKEN_SWAP = """
+You are a blockchain assistant helping users swap tokens on a decentralized exchange.
 
-1. SOURCE TOKEN (from_token)
-   Valid formats:
-   • Native token: "FLR" or "flr"
-   • Listed pairs only: "FLR", "WFLR", "BNZ", "BUNNY", "eUSDT", "eETH", "FINU", "FLX", "GEMIN", "GFLR", "JOULE", "PFL", "PHIL", "POODLE", "sFLR", "USDC.e", "USDT", "USDX"
-   • Case-insensitive match
-   • Strip spaces and normalize to uppercase
-   • FAIL if token not recognized
+The user has sent the following message:
+{user_input}
 
-2. DESTINATION TOKEN (to_token)
-   Valid formats:
-   • Same rules as source token
-   • Must be different from source token
-   • FAIL if same as source token
-   • FAIL if token not recognized
+Extract the following information from the message:
+1. The token the user wants to swap from (from_token)
+2. The token the user wants to swap to (to_token)
+3. The amount of the from_token to swap
 
-3. SWAP AMOUNT
-   Number extraction rules:
-   • Convert written numbers to digits (e.g., "five" → 5.0)
-   • Handle decimal and integer inputs
-   • Convert ALL integers to float (e.g., 100 → 100.0)
-   • Valid formats:
-     - Decimal: "1.5", "0.5"
-     - Integer: "1", "100"
-     - With tokens: "5 FLR", "10 USDC"
-   • Extract first valid number only
-   • Amount MUST be positive
-   • FAIL if no valid amount found
+Respond with a JSON object containing the following fields:
+- from_token: The token symbol the user wants to swap from (e.g., "FLR", "WFLR", "USDT")
+- to_token: The token symbol the user wants to swap to (e.g., "FLR", "WFLR", "USDT")
+- amount: The amount of from_token to swap as a float
 
-Input: ${user_input}
+If any information is missing or unclear, use your best judgment to infer it.
+If you absolutely cannot determine a value, set it to null.
 
-Response format:
+Available tokens: FLR (native token), WFLR, BNZ, BUNNY, eUSDT, eETH, FINU, FLX, GEMIN, GFLR, JOULE, PFL, PHIL, POODLE, sFLR, USDC.e, USDT, USDX
+
+Example response:
 {
-  "from_token": "<UPPERCASE_TOKEN_SYMBOL>",
-  "to_token": "<UPPERCASE_TOKEN_SYMBOL>",
-  "amount": <float_value>
+  "from_token": "FLR",
+  "to_token": "USDT",
+  "amount": 10.5
 }
-
-Processing rules:
-- All three fields MUST be present
-- DO NOT infer missing values
-- DO NOT allow same token pairs
-- Normalize token symbols to uppercase
-- Amount MUST be float type
-- Amount MUST be positive
-- FAIL if any value missing or invalid
-
-Examples:
-✓ "swap 100 FLR to USDT" → {"from_token": "FLR", "to_token": "USDT", "amount": 100.0}
-✓ "exchange 50.5 flr for eUSDT" → {"from_token": "FLR", "to_token": "EUSDT", "amount": 50.5}
-✓ "do the swap: 1 FLR to USDC.e" → {"from_token": "FLR", "to_token": "USDC.E", "amount": 1.0}
-✓ "swap 1 FLR to whatever in sFLR" → {"from_token": "FLR", "to_token": "SFLR", "amount": 1.0}
-✓ "swap 5 eETH to WFLR" → {"from_token": "EETH", "to_token": "WFLR", "amount": 5.0}
-✓ "trade 10 JOULE for BNZ" → {"from_token": "JOULE", "to_token": "BNZ", "amount": 10.0}
-✗ "swap flr to flr" → FAIL (same token)
-✗ "swap tokens" → FAIL (missing amount)
 """
 
 CONVERSATIONAL: Final = """
@@ -270,47 +208,29 @@ For example:
 - "Transfer 5 FLR to 0xdef456..."
 """
 
-# Define both uppercase and lowercase versions to ensure compatibility
-PRICE_QUOTE: Final = """
-Extract EXACTLY two pieces of information from the input for a token price quote:
+# Price quote prompt for extracting token pair from user input
+price_quote = """
+You are a blockchain assistant helping users get price quotes for token swaps on a decentralized exchange.
 
-1. SOURCE TOKEN (from_token)
-   Valid formats:
-   • Native token: "FLR" or "flr"
-   • Listed pairs only: "FLR", "WFLR", "BNZ", "BUNNY", "eUSDT", "eETH", "FINU", "FLX", "GEMIN", "GFLR", "JOULE", "PFL", "PHIL", "POODLE", "sFLR", "USDC.e", "USDT", "USDX"
-   • Case-insensitive match
-   • Strip spaces and normalize to uppercase
-   • FAIL if token not recognized
+The user has sent the following message:
+{user_input}
 
-2. DESTINATION TOKEN (to_token)
-   Valid formats:
-   • Same rules as source token
-   • Must be different from source token
-   • FAIL if same as source token
-   • FAIL if token not recognized
+Extract the following information from the message:
+1. The token the user wants to get a price quote from (from_token)
+2. The token the user wants to get a price quote to (to_token)
 
-Input: ${user_input}
+Respond with a JSON object containing the following fields:
+- from_token: The token symbol the user wants to get a quote from (e.g., "FLR", "WFLR", "USDT")
+- to_token: The token symbol the user wants to get a quote to (e.g., "FLR", "WFLR", "USDT")
 
-Response format:
+If any information is missing or unclear, use your best judgment to infer it.
+If you absolutely cannot determine a value, set it to null.
+
+Available tokens: FLR (native token), WFLR, BNZ, BUNNY, eUSDT, eETH, FINU, FLX, GEMIN, GFLR, JOULE, PFL, PHIL, POODLE, sFLR, USDC.e, USDT, USDX
+
+Example response:
 {
-  "from_token": "<UPPERCASE_TOKEN_SYMBOL>",
-  "to_token": "<UPPERCASE_TOKEN_SYMBOL>"
+  "from_token": "FLR",
+  "to_token": "USDT"
 }
-
-Processing rules:
-- Both fields MUST be present
-- DO NOT infer missing values
-- DO NOT allow same token pairs
-- Normalize token symbols to uppercase
-- FAIL if any value missing or invalid
-
-Examples:
-✓ "What's the price of FLR in USDT?" → {"from_token": "FLR", "to_token": "USDT"}
-✓ "How much eETH can I get for 10 FLR?" → {"from_token": "FLR", "to_token": "EETH"}
-✓ "Check the rate between FLR and eUSDT" → {"from_token": "FLR", "to_token": "EUSDT"}
-✗ "What's the price of FLR?" → FAIL (missing to_token)
-✗ "What's the exchange rate for FLR to FLR?" → FAIL (same token)
 """
-
-# Alias the uppercase version to lowercase for compatibility
-price_quote = PRICE_QUOTE

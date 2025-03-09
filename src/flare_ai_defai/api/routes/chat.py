@@ -22,6 +22,7 @@ from web3.exceptions import Web3RPCError
 from flare_ai_defai.ai import GeminiProvider
 from flare_ai_defai.attestation import Vtpm, VtpmAttestationError
 from flare_ai_defai.blockchain import FlareProvider, BlazeDEXProvider
+from flare_ai_defai.blockchain.blazedex import TOKEN_ADDRESSES
 from flare_ai_defai.prompts import PromptService, SemanticRouterResponse
 from flare_ai_defai.settings import settings
 
@@ -489,7 +490,7 @@ class ChatRouter:
             message = message.upper()
             
             # Look for common token symbols in the message
-            for token in self.blazedex.TOKEN_ADDRESSES.keys():
+            for token in TOKEN_ADDRESSES.keys():
                 if token in message:
                     tokens.append(token)
             

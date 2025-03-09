@@ -19,15 +19,27 @@ from typing import TypedDict
 
 class SemanticRouterResponse(str, Enum):
     """
-    Enum for semantic router response values.
-    
-    Defines the possible categories that a user message can be classified into.
+    Enum representing possible semantic routing destinations for user messages.
+
+    This enum defines the various categories a user message can be routed to
+    based on its semantic content. It helps in directing messages to the
+    appropriate handler functions.
+
+    Attributes:
+        GENERATE_ACCOUNT: Route for account generation requests
+        SEND_TOKEN: Route for token sending operations
+        TOKEN_SWAP: Route for token swap operations
+        PRICE_QUOTE: Route for token price quote requests
+        CHECK_LIQUIDITY: Route for liquidity pool status checks
+        REQUEST_ATTESTATION: Route for attestation requests
+        CONVERSATION: Default route for general conversation
     """
-    
+
     GENERATE_ACCOUNT = "GENERATE_ACCOUNT"
     SEND_TOKEN = "SEND_TOKEN"
     TOKEN_SWAP = "TOKEN_SWAP"
     PRICE_QUOTE = "PRICE_QUOTE"
+    CHECK_LIQUIDITY = "CHECK_LIQUIDITY"
     REQUEST_ATTESTATION = "REQUEST_ATTESTATION"
     CONVERSATION = "CONVERSATION"
 
