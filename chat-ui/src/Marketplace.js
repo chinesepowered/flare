@@ -36,9 +36,11 @@ const Marketplace = () => {
   };
 
   const handleSubmit = () => {
-    // This button does nothing
-    alert('Selections submitted!');
     navigate("/");
+  };
+
+  const handleNext = () => {
+    setActiveTab(activeTab + 1);
   };
 
   return (
@@ -53,14 +55,23 @@ const Marketplace = () => {
         {/* Tabs */}
         <div className="flex">
           <button
-            className={`flex-1 p-4 ${activeTab === 0 ? 'bg-gray-200' : ''}`}
-            onClick={() => setActiveTab(0)}
+            className={`flex-1 p-4 ${activeTab === 0 ? 'bg-gray-200' : ''} ${activeTab > 0 ? 'cursor-pointer' : 'cursor-default'}`}
+            onClick={() => activeTab > 0 && setActiveTab(0)}
+            disabled={activeTab < 1}
+          >
+            Splash
+          </button>
+          <button
+            className={`flex-1 p-4 ${activeTab === 1 ? 'bg-gray-200' : ''} ${activeTab > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+            onClick={() => activeTab > 1 && setActiveTab(1)}
+            disabled={activeTab < 2}
           >
             Model Selection
           </button>
           <button
-            className={`flex-1 p-4 ${activeTab === 1 ? 'bg-gray-200' : ''}`}
-            onClick={() => setActiveTab(1)}
+            className={`flex-1 p-4 ${activeTab === 2 ? 'bg-gray-200' : ''}`}
+            onClick={() => setActiveTab(2)}
+            disabled={activeTab < 2}
           >
             Data Provider Selection
           </button>
@@ -69,6 +80,19 @@ const Marketplace = () => {
         {/* Tab Content */}
         <div className="p-4">
           {activeTab === 0 && (
+            <div className="flex flex-col items-center">
+              <h2 className="text-lg font-bold mb-2">Welcome to the AI Marketplace</h2>
+              <img src="/AI_marketplace.jpeg" alt="AI Marketplace" className="max-w-md rounded-lg shadow-md mb-4" />
+              <button
+                className="bg-pink-600 text-white p-2 rounded"
+                onClick={handleNext}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
+          {activeTab === 1 && (
             <div>
               <h2 className="text-lg font-bold mb-2">Select a Model</h2>
               {models.map(model => (
@@ -85,10 +109,16 @@ const Marketplace = () => {
                   </label>
                 </div>
               ))}
+              <button
+                className="bg-pink-600 text-white p-2 rounded"
+                onClick={handleNext}
+              >
+                Next
+              </button>
             </div>
           )}
 
-          {activeTab === 1 && (
+          {activeTab === 2 && (
             <div>
               <h2 className="text-lg font-bold mb-2">Select Data Providers</h2>
               {dataProviders.map(provider => (
@@ -110,14 +140,16 @@ const Marketplace = () => {
         </div>
 
         {/* Submit Button */}
-        <div className="p-4">
-          <button
-            className="bg-pink-600 text-white p-2 rounded"
-            onClick={handleSubmit}
-          >
-            Submit
-          </button>
-        </div>
+        {activeTab === 2 && (
+          <div className="p-4">
+            <button
+              className="bg-pink-600 text-white p-2 rounded"
+              onClick={handleSubmit}
+            >
+              Submit
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
