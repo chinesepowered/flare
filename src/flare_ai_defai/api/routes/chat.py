@@ -13,6 +13,7 @@ The module provides a ChatRouter class that integrates various services:
 
 import json
 import re
+import hashlib
 
 import structlog
 from fastapi import APIRouter, HTTPException
@@ -30,6 +31,7 @@ from flare_ai_defai.settings import settings
 # New imports for Qdrant and RAG
 from flare_ai_defai.qdrant_client import initialize_qdrant_client
 from flare_ai_defai.rag_utils import embed_chunks
+from qdrant_client import models
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -302,8 +304,59 @@ class ChatRouter:
         amount = send_token_json.get("amount")
 
         # Check if the recipient address is sanctioned
+        # First, check against the in-memory list
         if await self.is_sanctioned_address(to_address):
             return {"response": "I cannot process this transaction as the recipient address is sanctioned."}
+
+        # Query Qdrant for similar sanctioned addresses
+        query_embedding = embed_chunks([to_address])[0][1]  # Embed the address
+        search_result = self.qdrant_client.search(
+            collection_name=self.collection_name,
+            query_vector=query_embedding,
+            limit=3  # Limit to top 3 results
+        )
+
+        # Extract sanctioned addresses from the search results
+        similar_sanctioned_addresses = [
+            hit.payload["text"] for hit in search_result
+        ]
+
+        # Augment the prompt with sanctioned addresses
+        prompt_augmentation = (
+            "The following addresses are known to be sanctioned or "
+            f"similar to sanctioned addresses: {', '.join(similar_sanctioned_addresses)}. "
+            "Consider this information when generating your response. If the user is attempting to send tokens to an address similar to a sanctioned address, warn them."
+        )
+
+        # Get the base prompt
+        base_prompt, mime_type, schema = self.prompts.get_formatted_prompt(
+            "token_send", user_input=message
+        )
+
+        # Combine the base prompt with the augmentation
+        augmented_prompt = base_prompt + "\n" + prompt_augmentation
+
+        # Generate the response using the augmented prompt
+        send_token_response = self.ai.generate(
+            prompt=augmented_prompt, response_mime_type=mime_type, response_schema=schema
+        )
+        send_token_json = json.loads(send_token_response.text)
+
+        expected_json_len = 2
+        if (
+            len(send_token_json) != expected_json_len
+            or send_token_json.get("amount") == 0.0
+        ):
+            try:
+                prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_send")
+                follow_up_response = self.ai.generate(prompt)
+                return {"response": follow_up_response.text}
+            except KeyError:
+                # Fallback if prompt is missing
+                return {"response": "I need more information to process your transfer. Please specify the destination address and the amount of FLR you want to send."}
+
+        to_address = send_token_json.get("to_address")
+        amount = send_token_json.get("amount")
 
         # If swapping from FLR, we need to approve WFLR
         from_token_for_approval = "WFLR"
@@ -665,9 +718,10 @@ class ChatRouter:
             # Prepare points for Qdrant
             points = []
             for i, (chunk, embedding) in enumerate(embedded_chunks):
+                point_id = hashlib.sha256(chunk.encode()).hexdigest()
                 points.append(
                     models.PointStruct(
-                        id=i,
+                        id=point_id,
                         vector=embedding,
                         payload={"text": chunk}
                     )

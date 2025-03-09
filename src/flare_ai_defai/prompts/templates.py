@@ -69,6 +69,7 @@ Input: ${user_input}
      * With token symbol: "1 FLR", "5.5 tokens", "0.1 flr"
      * In verb phrases: "transfer 1 FLR", "send 5.5 tokens", "send 0.1 flr"
    - If the amount appears before the token symbol, extract it correctly (e.g., "0.1 FLR")
+   - If no amount is found, return 0.0
 
 Return a valid JSON object with exactly these two fields:
 {
@@ -91,6 +92,9 @@ Return: {"to_address": "0x1234567890123456789012345678901234567890", "amount": 5
 
 For input: "send 0.1 flr to 0x257B2457b10C02d393458393515F51dc8880300d"
 Return: {"to_address": "0x257B2457b10C02d393458393515F51dc8880300d", "amount": 0.1}
+
+For input: "send to 0x257B2457b10C02d393458393515F51dc8880300d"
+Return: {"to_address": "0x257B2457b10C02d393458393515F51dc8880300d", "amount": 0.0}
 
 Negative Examples:
 For input: "What is the balance of 0x257B2457b10C02d393458393515F51dc8880300d"
