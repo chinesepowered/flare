@@ -92,7 +92,7 @@ ${user_input}
 Extract the following information from the message:
 1. The token the user wants to swap from (from_token)
 2. The token the user wants to swap to (to_token)
-3. The amount of the from_token to swap
+3. The amount of the from_token to swap.  If the amount is not explicitly specified, assume it is 0.01
 
 Respond with a JSON object containing the following fields:
 - from_token: The token symbol the user wants to swap from (e.g., "FLR", "WFLR", "USDT")
@@ -104,12 +104,38 @@ If you absolutely cannot determine a value, set it to null.
 
 Available tokens: FLR (native token), WFLR, BNZ, BUNNY, eUSDT, eETH, FINU, FLX, GEMIN, GFLR, JOULE, PFL, PHIL, POODLE, sFLR, USDC.e, USDT, USDX
 
-Example response:
+Example responses:
+```json
 {
   "from_token": "FLR",
   "to_token": "USDT",
   "amount": 10.5
 }
+```
+
+```json
+{
+  "from_token": "WFLR",
+  "to_token": "eETH",
+  "amount": 2.0
+}
+```
+
+```json
+{
+  "from_token": "BNZ",
+  "to_token": "USDC.e",
+  "amount": 100.0
+}
+```
+
+```json
+{
+  "from_token": "FLR",
+  "to_token": "USDT",
+  "amount": 1.0
+}
+```
 """
 
 CONVERSATIONAL: Final = """

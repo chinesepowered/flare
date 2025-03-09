@@ -317,7 +317,11 @@ class ChatRouter:
         swap_json = json.loads(swap_response.text)
         
         # Validate the swap parameters
-        if not all(key in swap_json for key in ["from_token", "to_token", "amount"]):
+        from_token = swap_json.get("from_token")
+        to_token = swap_json.get("to_token")
+        amount = swap_json.get("amount")
+
+        if not all([from_token, to_token, amount]):
             try:
                 prompt, _, _ = self.prompts.get_formatted_prompt("follow_up_token_swap")
                 follow_up_response = self.ai.generate(prompt=prompt)
@@ -325,11 +329,7 @@ class ChatRouter:
             except KeyError:
                 # Fallback if prompt is missing
                 return {"response": "I need more information to process your swap. Please specify the token you want to swap from, the token you want to swap to, and the amount."}
-        
-        from_token = swap_json["from_token"]
-        to_token = swap_json["to_token"]
-        amount = swap_json["amount"]
-        
+
         try:
             # Get a quote for the swap
             expected_output, price_impact = self.blazedex.get_swap_quote(
