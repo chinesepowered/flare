@@ -274,9 +274,16 @@ class ChatRouter:
                 # Fallback if prompt is missing
                 return {"response": "I need more information to process your transfer. Please specify the destination address and the amount of FLR you want to send."}
 
+        to_address = send_token_json.get("to_address")
+        amount = send_token_json.get("amount")
+
+        # Check if the recipient address is sanctioned
+        if await self.is_sanctioned_address(to_address):
+            return {"response": "I cannot process this transaction as the recipient address is sanctioned."}
+
         tx = self.blockchain.create_send_flr_tx(
-            to_address=send_token_json.get("to_address"),
-            amount=send_token_json.get("amount"),
+            to_address=to_address,
+            amount=amount,
         )
         self.logger.debug("send_token_tx", tx=tx)
         self.blockchain.add_tx_to_queue(msg=message, tx=tx)
@@ -536,3 +543,17 @@ class ChatRouter:
                 "response": f"I encountered an error while checking the liquidity pool status: {str(e)}. "
                 f"Please make sure you're using valid token symbols."
             }
+
+    async def is_sanctioned_address(self, address: str) -> bool:
+        """
+        Check if an address is sanctioned.
+
+        Args:
+            address: The address to check
+
+        Returns:
+            bool: True if the address is sanctioned, False otherwise
+        """
+        # Implement the logic to check if an address is sanctioned
+        # This is a placeholder and should be replaced with the actual implementation
+        return False
