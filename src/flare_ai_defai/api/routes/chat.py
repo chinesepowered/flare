@@ -286,9 +286,11 @@ class ChatRouter:
         prompt, mime_type, schema = self.prompts.get_formatted_prompt(
             "token_send", user_input=message
         )
+        self.logger.debug("Formatted prompt", prompt=prompt)
         send_token_response = self.ai.generate(
             prompt=prompt, response_mime_type=mime_type, response_schema=schema
         )
+        self.logger.debug("Response format",send_token_response)
         send_token_json = json.loads(send_token_response.text)
         expected_json_len = 2
         if (

@@ -83,6 +83,7 @@ IMPORTANT:
 - The "amount" field MUST be a float (not a string)
 - Return ONLY a valid JSON object, nothing else. Do not include any additional text, newlines, or comments.
 - Ensure the JSON object includes the closing curly brace `}`.
+- The address and amount can appear in any order in the input.
 
 Examples:
 For input: "transfer 1 FLR to 0x257B2457b10C02d393458393515F51dc8880300d"
