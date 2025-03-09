@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost"
     qdrant_port: int = 6333
     qdrant_api_key: str = ""  # Leave this empty for local development without authentication
-    flare_private_key: str
+    flare_private_key: str | None = None
 
     model_config = SettingsConfigDict(
         # This enables .env file support
