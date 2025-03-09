@@ -14,6 +14,7 @@ The module provides a ChatRouter class that integrates various services:
 import json
 import re
 import hashlib
+import uuid
 
 import structlog
 from fastapi import APIRouter, HTTPException
@@ -721,7 +722,7 @@ class ChatRouter:
             # Prepare points for Qdrant
             points = []
             for i, (chunk, embedding) in enumerate(embedded_chunks):
-                point_id = hashlib.sha256(chunk.encode()).hexdigest()
+                point_id = uuid.uuid4().hex  # Use UUID for point_id
                 points.append(
                     models.PointStruct(
                         id=point_id,
@@ -807,16 +808,20 @@ class ChatRouter:
             # Use Qdrant for sanctions check
             is_sanctioned, matches = await self.check_sanctions_qdrant(address)
             if is_sanctioned:
-                return {"response": f"The address {address} is sanctioned (Qdrant check). Similar sanctioned addresses: {matches}"}
+                self.logger.debug("sanctions_check", method="qdrant", address=address, sanctioned=True, matches=matches)
+                return {"response": f"The address {address} is sanctioned."}
             else:
-                return {"response": f"The address {address} is not sanctioned (Qdrant check)."}
+                self.logger.debug("sanctions_check", method="qdrant", address=address, sanctioned=False)
+                return {"response": f"The address {address} is not sanctioned."}
         else:
             # Use text file lookup for sanctions check
             is_sanctioned = await self.is_sanctioned_address(address)
             if is_sanctioned:
-                return {"response": f"The address {address} is sanctioned (Text file check)."}
+                self.logger.debug("sanctions_check", method="text_file", address=address, sanctioned=True)
+                return {"response": f"The address {address} is sanctioned."}
             else:
-                return {"response": f"The address {address} is not sanctioned (Text file check)."}
+                self.logger.debug("sanctions_check", method="text_file", address=address, sanctioned=False)
+                return {"response": f"The address {address} is not sanctioned."}
 
     async def check_sanctions_qdrant(self, address: str, collection_name: str = "flare_knowledge", threshold: float = 0.95) -> tuple[bool, list[dict]]:
         """
