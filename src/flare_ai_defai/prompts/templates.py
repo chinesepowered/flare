@@ -87,7 +87,7 @@ TOKEN_SWAP = """
 You are a blockchain assistant helping users swap tokens on a decentralized exchange.
 
 The user has sent the following message:
-{user_input}
+${user_input}
 
 Extract the following information from the message:
 1. The token the user wants to swap from (from_token)
@@ -213,7 +213,7 @@ price_quote = """
 You are a blockchain assistant helping users get price quotes for token swaps on a decentralized exchange.
 
 The user has sent the following message:
-{user_input}
+${user_input}
 
 Extract the following information from the message:
 1. The token the user wants to get a price quote from (from_token)
